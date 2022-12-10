@@ -1,29 +1,23 @@
 import discord
 import os
-from discord.ext import commands
+import asyncio
 from dotenv import load_dotenv
+from src.bebot import Bebot
 
+# Load .env file
 load_dotenv()
 
-# Define bot intents
+# Initialize Bot client
 intents = discord.Intents.default()
 intents.message_content = True
+bot = Bebot(command_prefix=".", intents=intents)
 
-bot = commands.Bot(command_prefix=".", intents=intents)
-
-
-# Base events
-@bot.event
-async def on_ready():
-    # Load cogs
-    cogs = ["music"]
-    for name in cogs:
-        await bot.load_extension(f"src.cogs.{name}")
-
-    print(f"Bot running as {bot.user}.")
-
+# Main program
+async def main():
+    TOKEN = os.environ["DISCORD_TOKEN"]
+    async with bot:
+        await bot.start(TOKEN, reconnect=True)
 
 # Run program
 if __name__ == "__main__":
-    TOKEN = os.environ["DISCORD_TOKEN"]
-    bot.run(TOKEN)
+    asyncio.run(main())
