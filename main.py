@@ -12,14 +12,15 @@ intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 
 
+# Base events
 @bot.event
 async def on_ready():
+    # Load cogs
+    cogs = ["music"]
+    for name in cogs:
+        await bot.load_extension(f"src.cogs.{name}")
+
     print(f"Bot running as {bot.user}.")
-
-
-@bot.event
-async def on_message(message):
-    print(message)
 
 
 # Run program
