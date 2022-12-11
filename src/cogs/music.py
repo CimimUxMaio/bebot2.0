@@ -1,9 +1,10 @@
-from discord.ext.commands import Context, command, Bot
+from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
+from src.bebot import Bebot
 
 
 class MusicCog(Cog, name = "Music"):
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Bebot):
         self.bot = bot
 
     @command(aliases=["q", "p"], name="queue")
@@ -11,5 +12,5 @@ class MusicCog(Cog, name = "Music"):
         print(search)
 
 
-async def setup(bot: Bot):
+async def setup(bot: Bebot):
     await bot.add_cog(MusicCog(bot))
