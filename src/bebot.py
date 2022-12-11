@@ -29,6 +29,7 @@ class Bebot(Bot):
         if not main_channel:
             main_channel = await guild.create_text_channel(self.MAIN_CHANNEL_NAME)
 
+        await main_channel.purge(limit=None)
         main_message = await main_channel.send("Buenas!")
         state = GuildState(
             main_channel_id = main_channel.id,
