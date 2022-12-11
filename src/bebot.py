@@ -27,7 +27,7 @@ class Bebot(Bot):
     async def setup_guild(self, guild: Guild) -> GuildState:
         main_channel = discord_utils.get(guild.text_channels, name=self.MAIN_CHANNEL_NAME)
         if not main_channel:
-            main_channel = await guild.create_text_channel("Musiquita Jot")
+            main_channel = await guild.create_text_channel(self.MAIN_CHANNEL_NAME)
 
         main_message = await main_channel.send("Buenas!")
         state = GuildState(
