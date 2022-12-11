@@ -6,14 +6,24 @@ class MainView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Button 1")
-    async def button1(self, interaction: Interaction, _: ui.Button):
-        print("Clicked button 1")
+    @ui.button(label="Prev")
+    async def previous(self, interaction: Interaction, _: ui.Button):
+        print("Prev")
         await interaction.response.defer()
 
-    @ui.button(label="Button 2")
-    async def button2(self, interaction: Interaction, _: ui.Button):
-        print("Clicked button 2")
+    @ui.button(label="Play/Stop")
+    async def play_stop(self, interaction: Interaction, _: ui.Button):
+        print("Play/Stop")
+        await interaction.response.defer()
+
+    @ui.button(label="Next")
+    async def next(self, interaction: Interaction, _: ui.Button):
+        print("Next")
+        await interaction.response.defer()
+
+    @ui.button(label="Queue")
+    async def queue(self, interaction: Interaction, _: ui.Button):
+        print("Queue")
         await interaction.response.defer()
 
 
@@ -25,3 +35,4 @@ class MainMenu:
 
     async def send(self, channel: TextChannel) -> Message:
         return await channel.send(embed=self.embed(), view=MainView())
+
