@@ -1,37 +1,27 @@
+import discord.ui as ui
 from discord import Embed, Interaction, Message, TextChannel
-from discord.ui.button import Button
-from discord.ui.view import View
 
 
-class ExampleButton(Button):
-    counter = 0
-
+class MainView(ui.View):
     def __init__(self):
-        super().__init__(label="Click Me!")
+        super().__init__(timeout=None)
 
-    async def callback(self, interaction: Interaction):
-        print("Button clicked!", self.counter)
-        self.counter += 1
+    @ui.button(label="Button 1")
+    async def button1(self, interaction: Interaction, _: ui.Button):
+        print("Clicked button 1")
         await interaction.response.defer()
 
-class MainView(View):
-    def __init__(self):
-        self.add_item(ExampleButton())
-        
-class MainEmbed(Embed):
-    def __init__(self):
-        self.add_field(name = "Field 1", value = "A field")
+    @ui.button(label="Button 2")
+    async def button2(self, interaction: Interaction, _: ui.Button):
+        print("Clicked button 2")
+        await interaction.response.defer()
 
-class MainMsgContent:
-    def view(self) -> View:
-        view = View()
-        view.add_item(ExampleButton())
-        return view
 
+class MainMenu:
     def embed(self) -> Embed:
         embed = Embed()
         embed.add_field(name = "Field 1", value = "A field")
         return embed
 
     async def send(self, channel: TextChannel) -> Message:
-        return await channel.send(embed=self.embed(), view=self.view())
+        return await channel.send(embed=self.embed(), view=MainView())

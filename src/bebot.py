@@ -1,10 +1,10 @@
 import src.GuildStateRepo as GuildStateRepo
 import discord.utils as discord_utils
 
-from discord import Guild, Reaction, User
+from discord import Guild
 from discord.ext.commands import Bot
 from src.GuildStateRepo import GuildState
-from src.menu import MainMsgContent
+from src.menu import MainMenu
 
 
 class Bebot(Bot):
@@ -27,15 +27,15 @@ class Bebot(Bot):
     async def on_guild_remove(self, guild: Guild):
         GuildStateRepo.delete_state(guild.id)
         
-    async def on_reaction_add(self, reaction: Reaction, _: User):
-        message = reaction.message
-        guild = message.guild
+    # async def on_reaction_add(self, reaction: Reaction, _: User):
+    #     message = reaction.message
+    #     guild = message.guild
 
-        if guild:
-            state = GuildStateRepo.get_state(guild.id)
-            if state and state.main_message_id == message.id:
-                # Is a main message reaction
-                print("Reacted to main message")
+    #     if guild:
+    #         state = GuildStateRepo.get_state(guild.id)
+    #         if state and state.main_message_id == message.id:
+    #             # Is a main message reaction
+    #             print("Reacted to main message")
 
     async def setup_guilds(self):
         for guild in self.guilds:
@@ -51,7 +51,7 @@ class Bebot(Bot):
         await main_channel.purge(limit=None)
 
         # Send main message and set the guild's state
-        content = MainMsgContent()
+        content = MainMenu()
         main_message = await content.send(main_channel)
         state = GuildState(main_message_id = main_message.id)
         GuildStateRepo.set_state(guild.id, state)
