@@ -4,7 +4,7 @@ import discord.utils as discord_utils
 from discord import Guild
 from discord.ext.commands import Bot
 from src.GuildStateRepo import GuildState
-from src.menu import MainMenu
+from src.mainmsg import send_main_message
 
 
 class Bebot(Bot):
@@ -51,7 +51,6 @@ class Bebot(Bot):
         await main_channel.purge(limit=None)
 
         # Send main message and set the guild's state
-        content = MainMenu()
-        main_message = await content.send(main_channel)
+        main_message = await send_main_message(main_channel)
         state = GuildState(main_message_id = main_message.id)
         GuildStateRepo.set_state(guild.id, state)

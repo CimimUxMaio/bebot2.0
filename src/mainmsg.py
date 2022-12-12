@@ -1,5 +1,15 @@
+import discord
 import discord.ui as ui
 from discord import Embed, Interaction, Message, TextChannel
+
+
+def MainEmbed(music_state) -> Embed:
+    embed = Embed(color=discord.Color.random())
+    current_song = music_state["current"]
+    current_msg = current_song if current_song else "Nada... que aburrido."
+    embed.add_field(name = "Escuchando:", value = current_msg, inline=False)
+    embed.set_image(url = "attachment://music_playing.gif")
+    return embed
 
 
 class MainView(ui.View):
@@ -27,12 +37,12 @@ class MainView(ui.View):
         await interaction.response.defer()
 
 
-class MainMenu:
-    def embed(self) -> Embed:
-        embed = Embed()
-        embed.add_field(name = "Field 1", value = "A field")
-        return embed
+async def send_main_message(channel: TextChannel) -> Message:
+    profile_pic = discord.File("./assets/music_playing.gif", filename="music_playing.gif")
+    music_state = {"current": "Cancion 1", "status": "paused"}
+    main_message = await channel.send(embed=MainEmbed(music_state), view=MainView(), files=[profile_pic])
+    # await main_message.add_reaction("\N{DOUBLE VERTICAL BAR}")
+    return main_message
 
-    async def send(self, channel: TextChannel) -> Message:
-        return await channel.send(embed=self.embed(), view=MainView())
+    
 
