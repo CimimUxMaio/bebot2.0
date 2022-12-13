@@ -1,0 +1,8 @@
+MAIN_CHANNEL_NAME = "musiquita-jot"
+
+NOW_PLAYING = "Escuchando:"
+NOTHING_PLAYING = "Nada... Que aburrido."
+PREV_BUTTON_LABEL = "Prev"
+PLAY_STOP_BUTTON_LABEL = "Play/Stop"
+NEXT_BUTTON_LABEL = "Next"
+QUEUE_BUTTON_LABEL = "Queue"

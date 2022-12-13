@@ -1,6 +1,7 @@
 import src.guildstaterepo as GuildStateRepo
 import discord.utils as discord_utils
 import src.mainmsg as mainmsg
+import src.strings as strings
 
 from discord import Guild
 from discord.ext.commands import Bot
@@ -8,8 +9,6 @@ from src.guildstaterepo import GuildState
 
 
 class Bebot(Bot):
-    MAIN_CHANNEL_NAME = "musiquita-jot"
-
     async def setup_hook(self):
         # Load cogs
         cogs = ["music"]
@@ -33,9 +32,9 @@ class Bebot(Bot):
 
     async def setup_guild(self, guild: Guild):
         # Create text channel if it does not exist
-        main_channel = discord_utils.get(guild.text_channels, name=self.MAIN_CHANNEL_NAME)
+        main_channel = discord_utils.get(guild.text_channels, name=strings.MAIN_CHANNEL_NAME)
         if not main_channel:
-            main_channel = await guild.create_text_channel(self.MAIN_CHANNEL_NAME)
+            main_channel = await guild.create_text_channel(strings.MAIN_CHANNEL_NAME)
 
         # Remove all messages from the channel
         await main_channel.purge(limit=None)
