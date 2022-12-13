@@ -37,7 +37,7 @@ class MainView(ui.View):
         await interaction.response.defer()
 
 
-async def send_main_message(channel: TextChannel) -> Message:
+async def send(channel: TextChannel) -> Message:
     profile_pic = discord.File("./assets/music_playing.gif", filename="music_playing.gif")
     music_state = {"current": "Cancion 1", "status": "paused"}
     main_message = await channel.send(embed=MainEmbed(music_state), view=MainView(), files=[profile_pic])
