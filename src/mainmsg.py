@@ -1,13 +1,15 @@
 import discord
 import discord.ui as ui
+import src.strings as strings
+
 from discord import Embed, Interaction, Message, TextChannel
 
 
 def MainEmbed(music_state) -> Embed:
     embed = Embed(color=discord.Color.random())
     current_song = music_state["current"]
-    current_msg = current_song if current_song else "Nada... que aburrido."
-    embed.add_field(name = "Escuchando:", value = current_msg, inline=False)
+    current_msg = current_song if current_song else strings.NOTHING_PLAYING
+    embed.add_field(name = strings.NOW_PLAYING, value = current_msg, inline=False)
     embed.set_image(url = "attachment://music_playing.gif")
     return embed
 
@@ -16,22 +18,22 @@ class MainView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Prev")
+    @ui.button(label=strings.PREV_BUTTON_LABEL)
     async def previous(self, interaction: Interaction, _: ui.Button):
         print("Prev")
         await interaction.response.defer()
 
-    @ui.button(label="Play/Stop")
+    @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)
     async def play_stop(self, interaction: Interaction, _: ui.Button):
         print("Play/Stop")
         await interaction.response.defer()
 
-    @ui.button(label="Next")
+    @ui.button(label=strings.NEXT_BUTTON_LABEL)
     async def next(self, interaction: Interaction, _: ui.Button):
         print("Next")
         await interaction.response.defer()
 
-    @ui.button(label="Queue")
+    @ui.button(label=strings.QUEUE_BUTTON_LABEL)
     async def queue(self, interaction: Interaction, _: ui.Button):
         print("Queue")
         await interaction.response.defer()
