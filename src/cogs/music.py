@@ -1,13 +1,12 @@
 import src.music.service as music_service
-import src.guildstaterepo as GuildStateRepo
 import src.exceptions as exceptions
 
 from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
+from src.music.client import MusicClient
 from src.bebot import Bebot
 from typing import cast
 from discord import Guild, Member, VoiceState, VoiceChannel
-
 
 
 class MusicCog(Cog, name = "Music"):
@@ -17,11 +16,11 @@ class MusicCog(Cog, name = "Music"):
     @command(aliases=["p"], name="play")
     async def play(self, ctx: Context, *, search: str):
         songs = music_service.search_songs(search)
-        guild_state = await GuildStateRepo.get(cast(Guild, ctx.guild))
         author = cast(Member, ctx.author)
         voice_state = cast(VoiceState, author.voice)
-        await guild_state.music_client.connect(cast(VoiceChannel, voice_state.channel))
-        await guild_state.music_client.queue_songs(songs)
+        music_client = self.get_music_client(ctx)
+        await music_client.connect(cast(VoiceChannel, voice_state.channel))
+        await music_client.queue_songs(songs)
 
     @play.before_invoke
     async def check_voice_channel(self, ctx: Context):
@@ -32,6 +31,11 @@ class MusicCog(Cog, name = "Music"):
         if ctx.voice_client and ctx.voice_client.channel != author.voice.channel:
             raise exceptions.BotConnectedToAnotherChannel()
 
+    def get_music_client(self, ctx: Context) -> MusicClient:
+        guild = cast(Guild, ctx.guild)
+        state = self.bot.state_repo.get(guild.id)
+        return state.music_client
+        
     # Framework methods # 
     def cog_check(self, ctx: Context) -> bool:
         if not ctx.guild:

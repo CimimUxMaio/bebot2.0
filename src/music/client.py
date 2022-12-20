@@ -1,9 +1,8 @@
 import asyncio
 import src.exceptions as exceptions
-import src.guildstaterepo as GuildStateRepo
 import src.mainmsg as mainmsg
 
-from discord import VoiceClient, Guild
+from discord import VoiceClient
 from asyncio import Queue, Event
 from src.music.service import Song
 from dataclasses import dataclass
@@ -14,9 +13,9 @@ class MusicState:
 
 
 class MusicClient:
-    def __init__(self, bot, guild: Guild):
+    def __init__(self, bot, guild_id: int):
         self.bot = bot
-        self.guild: Guild = guild
+        self.guild_id = guild_id
 
         self.voice_client: VoiceClient | None = None
         self.queue: Queue[Song] = Queue()
@@ -114,8 +113,8 @@ class MusicClient:
         vc.stop()
 
     async def send_update(self):
-        state = await GuildStateRepo.get(self.guild)
-        await mainmsg.update(state.main_message, self.state())
+        main_message = await self.bot.fetch_or_set_main_message(self.guild_id)
+        await mainmsg.update(main_message, self.state())
 
     def state(self) -> MusicState:
         return MusicState(current_song=self.current_song)

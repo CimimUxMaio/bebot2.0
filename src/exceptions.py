@@ -13,17 +13,20 @@ def SongNotFound(search: str) -> DomainException:
 def UnexpectedSongResponse(search: str) -> DomainException:
     return DomainException(f"The search for {search} returned an unexpected result")
 
-def VoiceClientNotSet():
+def VoiceClientNotSet() -> DomainException:
     return DomainException("Voice client not set")
 
-def NotAGuildMessage():
+def NotAGuildMessage() -> DomainException:
     return DomainException("DM channel commands not supported")
 
-def UserNotConnectedToVoiceChannel():
+def UserNotConnectedToVoiceChannel() -> DomainException:
     return DomainException("User not connected to a voice channel")
     
-def BotConnectedToAnotherChannel():
+def BotConnectedToAnotherChannel() -> DomainException:
     return DomainException("Bebot is currently connected to another channel")
 
-def AuthorTypeIsNotMember():
+def AuthorTypeIsNotMember() -> DomainException:
     return DomainException("Author is not a guild member")
+
+def GuildNotFound(guild_id: int) -> DomainException:
+    return DomainException(f"Guild with id: {guild_id} not found")
