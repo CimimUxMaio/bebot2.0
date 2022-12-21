@@ -33,7 +33,7 @@ class MusicClient:
                 self.next_song_event.clear()
 
                 try:
-                    self.current_song = await self.get_current_song()
+                    self.current_song = await self.get_next_song(timeout=60*10)
                     self.queue.task_done()
                 except asyncio.TimeoutError:
                     await self.run_finish_task()
@@ -48,12 +48,15 @@ class MusicClient:
 
                 # Wait until the song has finished.
                 await self.next_song_event.wait()
+
+                # Update main message with no song
+                await self.send_update()
         except Exception as e:
             # Something went wrong during the play loop.
             await self.run_finish_task()
             raise e
 
-    async def get_current_song(self, *, timeout = None) -> Song:
+    async def get_next_song(self, *, timeout = None) -> Song:
         return await asyncio.wait_for(self.queue.get(), timeout = timeout)
 
     async def run_finish_task(self):
@@ -63,6 +66,9 @@ class MusicClient:
         # Clean-up
         self.queue = Queue()
         self.current_song = None
+
+        # Update main message
+        await self.send_update()
         if self.voice_client:
             await self.voice_client.disconnect()
             self.voice_client = None
