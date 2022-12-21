@@ -3,7 +3,8 @@ import discord.ui as ui
 import src.strings as strings
 
 from discord import Embed, Interaction, Message, TextChannel
-from src.music.client import MusicState
+from src.guildstaterepo import GuildState
+from src.music.client import MusicClient, MusicState
 
 
 def MainEmbed(music_state: MusicState | None = None) -> Embed:
@@ -20,8 +21,9 @@ def MainEmbed(music_state: MusicState | None = None) -> Embed:
 
 
 class MainView(ui.View):
-    def __init__(self):
+    def __init__(self, bot):
         super().__init__(timeout=None)
+        self.bot = bot
 
     # @ui.button(label=strings.PREV_BUTTON_LABEL)
     # async def previous(self, interaction: Interaction, _: ui.Button):
@@ -30,12 +32,16 @@ class MainView(ui.View):
 
     @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)
     async def stop_resume(self, interaction: Interaction, _: ui.Button):
-        print("Play/Stop")
+        if interaction.guild_id:
+            music_client = self.get_music_client(interaction.guild_id)
+            music_client.toggle_pause_resume()
         await interaction.response.defer()
 
     @ui.button(label=strings.NEXT_BUTTON_LABEL)
     async def next(self, interaction: Interaction, _: ui.Button):
-        print("Next")
+        if interaction.guild_id:
+            music_client = self.get_music_client(interaction.guild_id)
+            music_client.skip_current_song()
         await interaction.response.defer()
 
     @ui.button(label=strings.QUEUE_BUTTON_LABEL)
@@ -43,9 +49,13 @@ class MainView(ui.View):
         print("Queue")
         await interaction.response.defer()
 
-async def send(channel: TextChannel) -> Message:
+    def get_music_client(self, guild_id: int) -> MusicClient:
+        state: GuildState = self.bot.state_repo.get(guild_id)
+        return state.music_client
+
+async def send(bot, channel: TextChannel) -> Message:
     profile_pic = discord.File("./assets/music_playing.gif", filename="status.gif")
-    return await channel.send(embed=MainEmbed(), view=MainView(), files=[profile_pic])
+    return await channel.send(embed=MainEmbed(), view=MainView(bot), files=[profile_pic])
 
 async def update(message: Message, state: MusicState) -> Message:
     profile_pic = discord.File("./assets/music_playing.gif", filename="status.gif")

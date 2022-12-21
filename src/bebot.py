@@ -61,7 +61,7 @@ class Bebot(Bot):
         await main_channel.purge(limit=None)
 
         # Send main message
-        return await mainmsg.send(main_channel)       
+        return await mainmsg.send(self, main_channel)       
 
     async def fetch_or_set_main_message(self, guild_id: int) -> Message:
         main_message = await self.state_repo.fetch_main_message(guild_id)
