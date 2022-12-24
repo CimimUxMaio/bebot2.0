@@ -27,6 +27,9 @@ class MusicClient:
     def init_audio_player(self):
         self.audio_player = self.bot.loop.create_task(self.play_loop())
 
+    def is_connected(self):
+        return self.voice_client is not None and self.voice_client.is_connected()
+
     async def play_loop(self):
         try:
             while True:

@@ -5,6 +5,7 @@ import src.strings as strings
 from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
 from src.music.client import MusicClient, MusicState
+from typing import cast
 
 
 def MainEmbed(music_state: MusicState | None = None) -> Embed:
@@ -20,34 +21,64 @@ def MainEmbed(music_state: MusicState | None = None) -> Embed:
     return embed
 
 
+def no_response(func):
+    async def wrapper(ref, interaction: Interaction, button: ui.Button):
+        await func(ref, interaction, button)
+        await interaction.response.edit_message()
+    return wrapper
+
+def with_music_client(func):
+    async def wrapper(ref, interaction: Interaction, button: ui.Button, **kwargs):
+        state: GuildState = ref.bot.state_repo.get(cast(int, interaction.guild_id))
+        kwargs["music_client"] = state.music_client
+        await func(ref, interaction, button, **kwargs)
+    return wrapper
+
+def when_condition(func, condition):
+    async def wrapper(*args, **kwargs):
+        if not condition(*args, **kwargs):
+            return 
+        return await func(*args, **kwargs)
+    return wrapper
+
+def when_connected(func):
+    def condition(ref, *_, music_client: MusicClient):
+        return music_client.is_connected()
+    return with_music_client(when_condition((func), condition))
+
+
 class MainView(ui.View):
     def __init__(self, bot):
         super().__init__(timeout=None)
         self.bot = bot
 
     # @ui.button(label=strings.PREV_BUTTON_LABEL)
+    # @no_response
     # async def previous(self, interaction: Interaction, _: ui.Button):
     #     print("Prev")
-    #     await interaction.response.defer()
 
-    @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)
-    async def stop_resume(self, interaction: Interaction, _: ui.Button):
-        if interaction.guild_id:
-            music_client = self.get_music_client(interaction.guild_id)
-            music_client.toggle_pause_resume()
-        await interaction.response.defer()
+    @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)  # type: ignore
+    @no_response
+    @when_connected
+    async def stop_resume(self, *_, music_client: MusicClient):
+        music_client.toggle_pause_resume()
 
-    @ui.button(label=strings.NEXT_BUTTON_LABEL)
-    async def next(self, interaction: Interaction, _: ui.Button):
-        if interaction.guild_id:
-            music_client = self.get_music_client(interaction.guild_id)
-            music_client.skip_current_song()
-        await interaction.response.defer()
+    @ui.button(label=strings.NEXT_BUTTON_LABEL)  # type: ignore
+    @no_response
+    @when_connected
+    async def next(self, *_, music_client: MusicClient):
+        music_client.skip_current_song()
 
-    @ui.button(label=strings.QUEUE_BUTTON_LABEL)
-    async def queue(self, interaction: Interaction, _: ui.Button):
+    @ui.button(label=strings.QUEUE_BUTTON_LABEL)  # type: ignore
+    @no_response
+    async def queue(self, *_):
         print("Queue")
-        await interaction.response.defer()
+
+    @ui.button(label=strings.LEAVE_BUTTON_LABEL)  # type: ignore
+    @no_response
+    @with_music_client
+    async def leave(self, *_, music_client: MusicClient):
+        await music_client.disconnect()
 
     def get_music_client(self, guild_id: int) -> MusicClient:
         state: GuildState = self.bot.state_repo.get(guild_id)
