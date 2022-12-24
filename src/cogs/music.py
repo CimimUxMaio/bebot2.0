@@ -3,10 +3,11 @@ import src.exceptions as exceptions
 
 from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
-from src.music.client import MusicClient
-from src.bebot import Bebot
 from typing import cast
 from discord import Guild, Member, VoiceState, VoiceChannel
+from src.music.client import MusicClient
+from src.guildstaterepo import GuildState
+from src.bebot import Bebot
 
 
 class MusicCog(Cog, name = "Music"):
@@ -16,10 +17,9 @@ class MusicCog(Cog, name = "Music"):
     @command(aliases=["p"], name="play")
     async def play(self, ctx: Context, *, search: str):
         songs = music_service.search_songs(search)
-        author = cast(Member, ctx.author)
-        voice_state = cast(VoiceState, author.voice)
         music_client = self.get_music_client(ctx)
-        await music_client.connect(cast(VoiceChannel, voice_state.channel))
+        voice_channel: VoiceChannel = ctx.author.voice.channel  # type: ignore
+        await music_client.connect(voice_channel)
         await music_client.queue_songs(songs)
 
     @play.before_invoke

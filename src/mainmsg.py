@@ -31,7 +31,7 @@ def with_music_client(func):
     async def wrapper(ref, interaction: Interaction, button: ui.Button, **kwargs):
         state: GuildState = ref.bot.state_repo.get(cast(int, interaction.guild_id))
         kwargs["music_client"] = state.music_client
-        await func(ref, interaction, button, **kwargs)
+        return await func(ref, interaction, button, **kwargs)
     return wrapper
 
 def when_condition(func, condition):
