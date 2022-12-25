@@ -4,9 +4,8 @@ import src.exceptions as exceptions
 from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
 from typing import cast
-from discord import Guild, Member, VoiceState, VoiceChannel
+from discord import Guild, Member, VoiceChannel
 from src.music.client import MusicClient
-from src.guildstaterepo import GuildState
 from src.bebot import Bebot
 
 

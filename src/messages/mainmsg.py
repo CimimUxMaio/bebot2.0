@@ -1,6 +1,7 @@
 import discord
 import discord.ui as ui
 import src.strings as strings
+import src.messages.pages as pages 
 
 from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
@@ -70,9 +71,18 @@ class MainView(ui.View):
         music_client.skip_current_song()
 
     @ui.button(label=strings.QUEUE_BUTTON_LABEL)  # type: ignore
-    @no_response
-    async def queue(self, *_):
-        print("Queue")
+    @with_music_client
+    async def queue(self, interaction: Interaction, _: ui.Button, music_client: MusicClient):
+        queue_pages = [Embed(description="Nada :(")]
+        current_song = music_client.current_song
+        if current_song:
+            current_title = current_song.title
+            titles = [f"{pos}. {song.title}" for pos, song in enumerate(music_client.queue(), start=1)]
+            group_size = 5
+            queue_groups = [titles[i:i+group_size] for i in range(0, len(titles), group_size)]
+            queue_pages = [self.queue_group_page(current_title, group) for group in queue_groups]
+
+        await pages.send(interaction, queue_pages)
 
     @ui.button(label=strings.LEAVE_BUTTON_LABEL)  # type: ignore
     @no_response
@@ -83,6 +93,14 @@ class MainView(ui.View):
     def get_music_client(self, guild_id: int) -> MusicClient:
         state: GuildState = self.bot.state_repo.get(guild_id)
         return state.music_client
+
+    def queue_group_page(self, current, titles) -> Embed:
+        embed = Embed()
+        embed.add_field(
+            name  = f"Current: {current}",
+            value = "\n".join(titles)
+        )
+        return embed
 
 async def send(bot, channel: TextChannel) -> Message:
     profile_pic = discord.File("./assets/music_playing.gif", filename="status.gif")

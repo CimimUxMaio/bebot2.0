@@ -1,5 +1,5 @@
 import discord.utils as discord_utils
-import src.mainmsg as mainmsg
+import src.messages.mainmsg as mainmsg
 import src.exceptions as exceptions
 import src.strings as strings
 
@@ -73,4 +73,3 @@ class Bebot(Bot):
             raise exceptions.GuildNotFound(guild_id)
 
         return await self.setup_main_channel(guild)
-    

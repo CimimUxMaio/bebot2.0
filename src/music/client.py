@@ -18,7 +18,7 @@ class MusicClient:
         self.guild_id = guild_id
 
         self.voice_client: VoiceClient | None = None
-        self.queue: Queue[Song] = Queue()
+        self._queue: Queue[Song] = Queue()
         self.current_song: Song | None = None
         self.next_song_event: Event = Event()
 
@@ -30,14 +30,17 @@ class MusicClient:
     def is_connected(self):
         return self.voice_client is not None and self.voice_client.is_connected()
 
+    def queue(self) -> list[Song]:
+        return list(self._queue.__dict__["_queue"])
+
     async def play_loop(self):
         try:
             while True:
                 self.next_song_event.clear()
 
                 try:
-                    self.current_song = await self.get_next_song(timeout=60*10)
-                    self.queue.task_done()
+                    self.current_song = await self.get_next_song(timeout=60)
+                    # self._queue.task_done()
                 except asyncio.TimeoutError:
                     await self.run_finish_task()
                     return
@@ -53,28 +56,30 @@ class MusicClient:
                 await self.next_song_event.wait()
 
                 # Update main message with no song
-                await self.send_update()
+                if self._queue.empty():
+                    await self.send_update()
         except Exception as e:
             # Something went wrong during the play loop.
             await self.run_finish_task()
             raise e
 
     async def get_next_song(self, *, timeout = None) -> Song:
-        return await asyncio.wait_for(self.queue.get(), timeout = timeout)
+        return await asyncio.wait_for(self._queue.get(), timeout = timeout)
 
     async def run_finish_task(self):
         self.bot.loop.create_task(self.finish())
 
     async def finish(self):
         # Clean-up
-        self.queue = Queue()
+        self._queue = Queue()
         self.current_song = None
 
-        # Update main message
-        await self.send_update()
         if self.voice_client:
             await self.voice_client.disconnect()
             self.voice_client = None
+
+        # Update main message
+        await self.send_update()
         
     def play_next_song(self, error: Exception | None = None):
         # Ignore error, if something went wrong during the previous song continue 
@@ -101,7 +106,7 @@ class MusicClient:
 
     async def queue_songs(self, songs: list[Song]):
         for song in songs:
-            await self.queue.put(song)
+            await self._queue.put(song)
 
     def require_voice_client(self) -> VoiceClient:
         if not self.voice_client:
