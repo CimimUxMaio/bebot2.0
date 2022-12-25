@@ -1,6 +1,6 @@
 import asyncio
 import src.exceptions as exceptions
-import src.mainmsg as mainmsg
+import src.messages.mainmsg as mainmsg
 
 from discord import VoiceClient
 from asyncio import Queue, Event

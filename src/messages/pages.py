@@ -30,7 +30,7 @@ class PagesView(ui.View):
 
 def format_page(page: Embed, n: int, page_amount: int) -> Embed:
     page.color = discord.Color.random()
-    page.set_footer(text=f"Page {n}/{page_amount}")
+    page.set_footer(text="Page %s/%s" % (n, page_amount))
     return page
 
 async def send(ctx: Context | Interaction, pages: list[Embed]):
