@@ -1,5 +1,6 @@
 import discord
 import discord.ui as ui
+import src.strings as strings
 
 from discord import Embed, Interaction
 from discord.ext.commands import Context
@@ -30,7 +31,7 @@ class PagesView(ui.View):
 
 def format_page(page: Embed, n: int, page_amount: int) -> Embed:
     page.color = discord.Color.random()
-    page.set_footer(text="Page %s/%s" % (n, page_amount))
+    page.set_footer(text=strings.QUEUE_PAGE_FOOTER % (n, page_amount))
     return page
 
 async def send(ctx: Context | Interaction, pages: list[Embed]):
@@ -39,12 +40,9 @@ async def send(ctx: Context | Interaction, pages: list[Embed]):
 
     current = pages[0]
     view = PagesView(pages, 0)
+    delete_after = 30
     if isinstance(ctx, Context):
         message = await ctx.send(embed=current, view=view)
+        await message.delete(delay=delete_after)
     else:  # Is Interaction
-        await ctx.response.send_message(embed=current, view=view)
-        message = await ctx.original_response()
-
-    await message.delete(delay=30)
-
-
+        await ctx.response.send_message(embed=current, view=view, delete_after=delete_after)

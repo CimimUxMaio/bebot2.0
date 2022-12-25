@@ -2,6 +2,7 @@ import discord
 import discord.ui as ui
 import src.strings as strings
 import src.messages.pages as pages 
+import src.utils as utils
 
 from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
@@ -53,11 +54,6 @@ class MainView(ui.View):
         super().__init__(timeout=None)
         self.bot = bot
 
-    # @ui.button(label=strings.PREV_BUTTON_LABEL)
-    # @no_response
-    # async def previous(self, interaction: Interaction, _: ui.Button):
-    #     print("Prev")
-
     @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)  # type: ignore
     @no_response
     @when_connected
@@ -73,14 +69,12 @@ class MainView(ui.View):
     @ui.button(label=strings.QUEUE_BUTTON_LABEL)  # type: ignore
     @with_music_client
     async def queue(self, interaction: Interaction, _: ui.Button, music_client: MusicClient):
-        queue_pages = [Embed(description="Nada :(")]
         current_song = music_client.current_song
+        queue_pages = [Embed(description = strings.QUEUE_NOTHING_PLAYING)]
         if current_song:
             current_title = current_song.title
             titles = [f"{pos}. {song.title}" for pos, song in enumerate(music_client.queue(), start=1)]
-            group_size = 5
-            queue_groups = [titles[i:i+group_size] for i in range(0, len(titles), group_size)]
-            queue_pages = [self.queue_group_page(current_title, group) for group in queue_groups]
+            queue_pages = self.generate_queue_pages(current_title, titles)
 
         await pages.send(interaction, queue_pages)
 
@@ -95,12 +89,20 @@ class MainView(ui.View):
         return state.music_client
 
     def queue_group_page(self, current, titles) -> Embed:
-        embed = Embed()
+        embed = Embed(title=strings.QUEUE_CURRENT % f"\"{current}\"")
         embed.add_field(
-            name  = f"Current: {current}",
+            name  = "\a",
             value = "\n".join(titles)
         )
         return embed
+
+    def generate_queue_pages(self, current_title: str, titles: list[str], page_size: int = 5) -> list[Embed]:
+        if len(titles) == 0:
+            return [Embed(title=current_title)]
+
+        title_groups = utils.group(titles, page_size)
+        return [self.queue_group_page(current_title, group) for group in title_groups]
+
 
 async def send(bot, channel: TextChannel) -> Message:
     profile_pic = discord.File("./assets/music_playing.gif", filename="status.gif")
