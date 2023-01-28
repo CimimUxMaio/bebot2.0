@@ -15,6 +15,7 @@ class GuildState:
     main_message_id: int
     music_client: MusicClient
 
+
 class GuildStateRepo:
     def __init__(self, bot: Bot):
         self.bot: Bot = bot
@@ -46,7 +47,9 @@ class GuildStateRepo:
         if not guild:
             return None
 
-        main_channel = discord_utils.get(guild.text_channels, name = strings.MAIN_CHANNEL_NAME)
+        main_channel = discord_utils.get(
+            guild.text_channels, name=strings.MAIN_CHANNEL_NAME
+        )
 
         if not main_channel:
             return None
@@ -55,4 +58,3 @@ class GuildStateRepo:
             return await main_channel.fetch_message(main_message_id)
         except NotFound:
             return None
-

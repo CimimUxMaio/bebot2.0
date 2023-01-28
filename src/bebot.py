@@ -29,9 +29,11 @@ class Bebot(Bot):
         # If message was sent through the main channel,
         # delete it after a few seconds
         channel = message.channel
-        if (message.author != self.user 
-            and isinstance(channel, TextChannel) 
-            and channel.name == strings.MAIN_CHANNEL_NAME):
+        if (
+            message.author != self.user
+            and isinstance(channel, TextChannel)
+            and channel.name == strings.MAIN_CHANNEL_NAME
+        ):
             await message.delete(delay=3)
 
         return await super().on_message(message)
@@ -48,12 +50,17 @@ class Bebot(Bot):
 
     async def setup_guild(self, guild: Guild):
         main_message = await self.setup_main_channel(guild)
-        state = GuildState(main_message_id=main_message.id, music_client=MusicClient(bot=self, guild_id=guild.id))
+        state = GuildState(
+            main_message_id=main_message.id,
+            music_client=MusicClient(bot=self, guild_id=guild.id),
+        )
         self.state_repo.store(guild.id, state)
 
     async def setup_main_channel(self, guild: Guild) -> Message:
         # Create text channel if it does not exist
-        main_channel = discord_utils.get(guild.text_channels, name = strings.MAIN_CHANNEL_NAME)
+        main_channel = discord_utils.get(
+            guild.text_channels, name=strings.MAIN_CHANNEL_NAME
+        )
         if not main_channel:
             main_channel = await guild.create_text_channel(strings.MAIN_CHANNEL_NAME)
 
@@ -61,7 +68,7 @@ class Bebot(Bot):
         await main_channel.purge(limit=None)
 
         # Send main message
-        return await mainmsg.send(self, main_channel)       
+        return await mainmsg.send(self, main_channel)
 
     async def fetch_or_set_main_message(self, guild_id: int) -> Message:
         main_message = await self.state_repo.fetch_main_message(guild_id)

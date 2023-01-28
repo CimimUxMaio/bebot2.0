@@ -9,7 +9,7 @@ from src.music.client import MusicClient
 from src.bebot import Bebot
 
 
-class MusicCog(Cog, name = "Music"):
+class MusicCog(Cog, name="Music"):
     def __init__(self, bot: Bebot):
         self.bot = bot
 
@@ -34,8 +34,8 @@ class MusicCog(Cog, name = "Music"):
         guild = cast(Guild, ctx.guild)
         state = self.bot.state_repo.get(guild.id)
         return state.music_client
-        
-    # Framework methods # 
+
+    # Framework methods #
     def cog_check(self, ctx: Context) -> bool:
         if not ctx.guild:
             raise exceptions.NotAGuildMessage()

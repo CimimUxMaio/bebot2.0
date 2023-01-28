@@ -34,6 +34,7 @@ def format_page(page: Embed, n: int, page_amount: int) -> Embed:
     page.set_footer(text=strings.QUEUE_PAGE_FOOTER % (n, page_amount))
     return page
 
+
 async def send(ctx: Context | Interaction, pages: list[Embed]):
     page_amount = len(pages)
     pages = [format_page(p, n, page_amount) for n, p in enumerate(pages, start=1)]
