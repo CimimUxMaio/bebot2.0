@@ -7,9 +7,10 @@ from asyncio import Queue, Event
 from src.music.service import Song
 from dataclasses import dataclass
 
+
 @dataclass
 class MusicState:
-    current_song: Song | None 
+    current_song: Song | None
 
 
 class MusicClient:
@@ -50,7 +51,7 @@ class MusicClient:
 
                 # Play song
                 vc = self.require_voice_client()
-                vc.play(self.current_song.audio, after = self.play_next_song)
+                vc.play(self.current_song.audio, after=self.play_next_song)
 
                 # Wait until the song has finished.
                 await self.next_song_event.wait()
@@ -63,8 +64,8 @@ class MusicClient:
             await self.run_finish_task()
             raise e
 
-    async def get_next_song(self, *, timeout = None) -> Song:
-        return await asyncio.wait_for(self._queue.get(), timeout = timeout)
+    async def get_next_song(self, *, timeout=None) -> Song:
+        return await asyncio.wait_for(self._queue.get(), timeout=timeout)
 
     async def run_finish_task(self):
         self.bot.loop.create_task(self.finish())
@@ -80,9 +81,9 @@ class MusicClient:
 
         # Update main message
         await self.send_update()
-        
+
     def play_next_song(self, error: Exception | None = None):
-        # Ignore error, if something went wrong during the previous song continue 
+        # Ignore error, if something went wrong during the previous song continue
         # with the next one.
         if error:
             print(str(error))
