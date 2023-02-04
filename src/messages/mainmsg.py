@@ -1,8 +1,7 @@
 import discord
 import discord.ui as ui
 import src.strings as strings
-import src.messages.pages as pages
-import src.utils as utils
+import src.messages.queue as queuemsg
 
 from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
@@ -78,17 +77,7 @@ class MainView(ui.View):
     async def queue(
         self, interaction: Interaction, _: ui.Button, music_client: MusicClient
     ):
-        current_song = music_client.current_song
-        queue_pages = [Embed(description=strings.QUEUE_NOTHING_PLAYING)]
-        if current_song:
-            current_title = current_song.title
-            titles = [
-                f"{pos}. {song.title}"
-                for pos, song in enumerate(music_client.queue(), start=1)
-            ]
-            queue_pages = self.generate_queue_pages(current_title, titles)
-
-        await pages.send(interaction, queue_pages)
+        await queuemsg.send(interaction, music_client)
 
     @ui.button(label=strings.LEAVE_BUTTON_LABEL)  # type: ignore
     @no_response
@@ -99,20 +88,6 @@ class MainView(ui.View):
     def get_music_client(self, guild_id: int) -> MusicClient:
         state: GuildState = self.bot.state_repo.get(guild_id)
         return state.music_client
-
-    def queue_group_page(self, current, titles) -> Embed:
-        embed = Embed(title=strings.QUEUE_CURRENT % f'"{current}"')
-        embed.add_field(name="\a", value="\n".join(titles))
-        return embed
-
-    def generate_queue_pages(
-        self, current_title: str, titles: list[str], page_size: int = 5
-    ) -> list[Embed]:
-        if len(titles) == 0:
-            return [Embed(title=current_title)]
-
-        title_groups = utils.group(titles, page_size)
-        return [self.queue_group_page(current_title, group) for group in title_groups]
 
 
 async def send(bot, channel: TextChannel) -> Message:

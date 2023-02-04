@@ -11,11 +11,13 @@ FFMPEG_OPTIONS = {
     "options": "-vn"
 }
 
+
 @dataclass
 class Song:
     title: str
     duration_desc: str
     audio: FFmpegPCMAudio
+
 
 def duration_desc(song_info) -> str:
     duration = song_info["duration"]
@@ -26,22 +28,23 @@ def duration_desc(song_info) -> str:
     def pad(n):
         return str(n).ljust(2, "0")
 
-    return f"{pad(hours)}:{pad(minutes)}:{pad(seconds)}" 
+    return f"{pad(hours)}:{pad(minutes)}:{pad(seconds)}"
+
 
 def search_songs(search: str) -> list[Song]:
     with YoutubeDL(YDL_OPTIONS) as ydl:
-        info = ydl.extract_info("ytsearch:%s" % search, download = False)
+        info = ydl.extract_info("ytsearch:%s" % search, download=False)
 
         if not isinstance(info, dict):
             raise exceptions.UnexpectedSongResponse(search)
 
         try:
             song_info = info["entries"][0]
-        except:
+        except IndexError:
             raise exceptions.SongNotFound(search)
 
     return [Song(
-        title = song_info["title"],
-        duration_desc = duration_desc(song_info),
-        audio = FFmpegPCMAudio(song_info["url"], **FFMPEG_OPTIONS)
+        title=song_info["title"],
+        duration_desc=duration_desc(song_info),
+        audio=FFmpegPCMAudio(song_info["url"], **FFMPEG_OPTIONS)
     )]

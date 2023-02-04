@@ -1,5 +1,6 @@
 import src.music.service as music_service
 import src.exceptions as exceptions
+import src.messages.queue as queuemsg
 
 from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
@@ -34,6 +35,11 @@ class MusicCog(Cog, name="Music"):
     @command(aliases=["l"], name="leave", help="Disconnects Bebot from the voice channel.")
     async def leave(self, ctx: Context):
         await self.get_music_client(ctx).disconnect()
+
+    @command(aliases=["q"], name="queue", help="Show the current music queue.")
+    async def queue(self, ctx: Context):
+        music_client = self.get_music_client(ctx)
+        await queuemsg.send(ctx, music_client)
 
     @play.before_invoke
     @skip.before_invoke
