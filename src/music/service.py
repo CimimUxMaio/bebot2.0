@@ -1,4 +1,5 @@
 import src.exceptions as exceptions
+from validators.url import url as is_url
 
 from youtube_dl import YoutubeDL
 from discord.player import FFmpegPCMAudio
@@ -6,6 +7,7 @@ from dataclasses import dataclass
 
 
 YDL_OPTIONS = {"format": "bestaudio"}
+
 FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn"
@@ -33,18 +35,22 @@ def duration_desc(song_info) -> str:
 
 def search_songs(search: str) -> list[Song]:
     with YoutubeDL(YDL_OPTIONS) as ydl:
-        info = ydl.extract_info("ytsearch:%s" % search, download=False)
+        url = "ytsearch:%s" % search
+        if is_url(search):  # type: ignore
+            url = search
 
-        if not isinstance(info, dict):
-            raise exceptions.UnexpectedSongResponse(search)
+        info = ydl.extract_info(url, download=False)
 
-        try:
-            song_info = info["entries"][0]
-        except IndexError:
-            raise exceptions.SongNotFound(search)
+    if not isinstance(info, dict):
+        raise exceptions.UnexpectedSongResponse(search)
+
+    try:
+        songs_info = info["entries"]
+    except IndexError:
+        raise exceptions.SongNotFound(search)
 
     return [Song(
-        title=song_info["title"],
-        duration_desc=duration_desc(song_info),
-        audio=FFmpegPCMAudio(song_info["url"], **FFMPEG_OPTIONS)
-    )]
+        title=info["title"],
+        duration_desc=duration_desc(info),
+        audio=FFmpegPCMAudio(info["url"], **FFMPEG_OPTIONS)
+    ) for info in songs_info]

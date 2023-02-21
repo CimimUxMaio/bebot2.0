@@ -2,6 +2,7 @@ import discord
 import discord.ui as ui
 import src.strings as strings
 
+from src.utils import SuperContext
 from discord import Embed, Interaction
 from discord.ext.commands import Context
 
@@ -38,12 +39,6 @@ def format_page(page: Embed, n: int, page_amount: int) -> Embed:
 async def send(ctx: Context | Interaction, pages: list[Embed]):
     page_amount = len(pages)
     pages = [format_page(p, n, page_amount) for n, p in enumerate(pages, start=1)]
-
     current = pages[0]
     view = PagesView(pages, 0)
-    delete_after = 30
-    if isinstance(ctx, Context):
-        message = await ctx.send(embed=current, view=view)
-        await message.delete(delay=delete_after)
-    else:  # Is Interaction
-        await ctx.response.send_message(embed=current, view=view, delete_after=delete_after)
+    await SuperContext(ctx).send_message(embed=current, view=view, delete_after=30)

@@ -2,11 +2,13 @@ import discord
 import discord.ui as ui
 import src.strings as strings
 import src.messages.queue as queuemsg
+import src.exceptions as exceptions
 
 from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
 from src.music.client import MusicClient, MusicState
-from typing import cast
+from typing import Any, cast
+from discord.ext.commands import Bot
 
 
 def MainEmbed(music_state: MusicState | None = None) -> Embed:
@@ -58,7 +60,7 @@ def when_connected(func):
 class MainView(ui.View):
     def __init__(self, bot):
         super().__init__(timeout=None)
-        self.bot = bot
+        self.bot: Bot = bot
 
     @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)  # type: ignore
     @no_response
@@ -88,6 +90,9 @@ class MainView(ui.View):
     def get_music_client(self, guild_id: int) -> MusicClient:
         state: GuildState = self.bot.state_repo.get(guild_id)
         return state.music_client
+
+    async def on_error(self, interaction: Interaction, error: Exception, _: ui.Item[Any], /):
+        await exceptions.exception_handler(ctx=interaction, exception=error)
 
 
 async def send(bot, channel: TextChannel) -> Message:
