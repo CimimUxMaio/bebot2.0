@@ -6,8 +6,8 @@ name = "pypi"
 [packages]
 python-dotenv = "*"
 "discord.py" = {extras = ["voice"], version = "*"}
-youtube-dl = {ref = "master", git = "https://github.com/ytdl-org/youtube-dl.git"}
 validators = "*"
+youtube-dl = {git = "https://github.com/ytdl-org/youtube-dl.git"}
 
 [dev-packages]
 
