@@ -40,7 +40,7 @@ class MusicClient:
                 self.next_song_event.clear()
 
                 try:
-                    self.current_song = await self.get_next_song(timeout=60)
+                    self.current_song = await self.get_next_song(timeout=60 * 20)
                     # self._queue.task_done()
                 except asyncio.TimeoutError:
                     await self.run_finish_task()
