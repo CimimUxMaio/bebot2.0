@@ -8,6 +8,7 @@ from typing import cast
 from discord import Guild, Member, VoiceChannel
 from src.music.client import MusicClient
 from src.bebot import Bebot
+from src.utils import SuperContext
 
 
 class MusicCog(Cog, name="Music"):
@@ -39,19 +40,20 @@ class MusicCog(Cog, name="Music"):
     @command(aliases=["q"], name="queue", help="Show the current music queue.")
     async def queue(self, ctx: Context):
         music_client = self.get_music_client(ctx)
-        await queuemsg.send(ctx, music_client)
+        await queuemsg.send(SuperContext(self.bot, ctx), music_client)
 
     @play.before_invoke
     @skip.before_invoke
     @stop.before_invoke
     @leave.before_invoke
     async def check_voice_channel(self, ctx: Context):
-        author = cast(Member, ctx.author)
-        if not author.voice or not author.voice.channel:
-            raise exceptions.UserNotConnectedToVoiceChannel()
+        await SuperContext(self.bot, ctx).check_voice_channel()
+        # author = cast(Member, ctx.author)
+        # if not author.voice or not author.voice.channel:
+        #     raise exceptions.UserNotConnectedToVoiceChannel()
 
-        if ctx.voice_client and ctx.voice_client.channel != author.voice.channel:
-            raise exceptions.BotConnectedToAnotherChannel()
+        # if ctx.voice_client and ctx.voice_client.channel != author.voice.channel:
+        #     raise exceptions.BotConnectedToAnotherChannel()
 
     def get_music_client(self, ctx: Context) -> MusicClient:
         guild = cast(Guild, ctx.guild)

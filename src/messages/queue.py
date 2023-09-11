@@ -2,9 +2,8 @@ import src.messages.pages as pagesmsg
 import src.strings as strings
 import src.utils as utils
 
-from discord import Embed, Interaction
+from discord import Embed
 from src.music.client import MusicClient
-from discord.ext.commands import Context
 
 
 def queue_group_page(current, titles) -> Embed:
@@ -22,7 +21,7 @@ def generate_queue_pages(current_title: str, titles: list[str], page_size: int =
     return [queue_group_page(current_title, group) for group in title_groups]
 
 
-async def send(ctx: Context | Interaction, music_client: MusicClient):
+async def send(ctx: utils.SuperContext, music_client: MusicClient):
     current_song = music_client.current_song
     queue_pages = [Embed(description=strings.QUEUE_NOTHING_PLAYING)]
     if current_song:

@@ -9,6 +9,7 @@ from src.guildstaterepo import GuildState
 from src.music.client import MusicClient, MusicState
 from typing import Any, cast
 from discord.ext.commands import Bot
+from src.utils import SuperContext
 
 
 def MainEmbed(music_state: MusicState | None = None) -> Embed:
@@ -41,6 +42,13 @@ def with_music_client(func):
     return wrapper
 
 
+def check_voice_channel(func):
+    async def wrapper(ref, interaction: Interaction, button: ui.Button, **kwargs):
+        await SuperContext(ref.bot, interaction).check_voice_channel()
+        return await func(ref, interaction, button, **kwargs)
+    return wrapper
+
+
 def when_condition(func, condition):
     async def wrapper(*args, **kwargs):
         if not condition(*args, **kwargs):
@@ -60,17 +68,20 @@ def when_connected(func):
 class MainView(ui.View):
     def __init__(self, bot):
         super().__init__(timeout=None)
-        self.bot: Bot = bot
+        from src.bebot import Bebot  # Circular import
+        self.bot: Bebot = bot
 
     @ui.button(label=strings.PLAY_STOP_BUTTON_LABEL)  # type: ignore
     @no_response
     @when_connected
+    @check_voice_channel
     async def stop_resume(self, *_, music_client: MusicClient):
         music_client.toggle_pause_resume()
 
     @ui.button(label=strings.NEXT_BUTTON_LABEL)  # type: ignore
     @no_response
     @when_connected
+    @check_voice_channel
     async def next(self, *_, music_client: MusicClient):
         music_client.skip_current_song()
 
@@ -79,11 +90,12 @@ class MainView(ui.View):
     async def queue(
         self, interaction: Interaction, _: ui.Button, music_client: MusicClient
     ):
-        await queuemsg.send(interaction, music_client)
+        await queuemsg.send(SuperContext(self.bot, interaction), music_client)
 
     @ui.button(label=strings.LEAVE_BUTTON_LABEL)  # type: ignore
     @no_response
     @with_music_client
+    @check_voice_channel
     async def leave(self, *_, music_client: MusicClient):
         await music_client.disconnect()
 
@@ -92,7 +104,7 @@ class MainView(ui.View):
         return state.music_client
 
     async def on_error(self, interaction: Interaction, error: Exception, _: ui.Item[Any], /):
-        await exceptions.exception_handler(ctx=interaction, exception=error)
+        await exceptions.exception_handler(ctx=SuperContext(self.bot, interaction), exception=error)
 
 
 async def send(bot, channel: TextChannel) -> Message:

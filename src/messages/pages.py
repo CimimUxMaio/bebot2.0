@@ -4,7 +4,6 @@ import src.strings as strings
 
 from src.utils import SuperContext
 from discord import Embed, Interaction
-from discord.ext.commands import Context
 
 
 class PagesView(ui.View):
@@ -36,9 +35,9 @@ def format_page(page: Embed, n: int, page_amount: int) -> Embed:
     return page
 
 
-async def send(ctx: Context | Interaction, pages: list[Embed]):
+async def send(ctx: SuperContext, pages: list[Embed]):
     page_amount = len(pages)
     pages = [format_page(p, n, page_amount) for n, p in enumerate(pages, start=1)]
     current = pages[0]
     view = PagesView(pages, 0)
-    await SuperContext(ctx).send_message(embed=current, view=view, delete_after=30)
+    await ctx.send_message(embed=current, view=view, delete_after=30)

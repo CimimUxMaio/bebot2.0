@@ -7,6 +7,7 @@ from discord import Guild, Message, TextChannel
 from discord.ext.commands import Bot
 from src.guildstaterepo import GuildState, GuildStateRepo
 from src.music.client import MusicClient
+from src.utils import SuperContext
 
 
 class Bebot(Bot):
@@ -80,3 +81,6 @@ class Bebot(Bot):
             raise exceptions.GuildNotFound(guild_id)
 
         return await self.setup_main_channel(guild)
+
+    async def on_command_error(self, ctx, error):
+        await exceptions.exception_handler(ctx=SuperContext(self, ctx), exception=error)
