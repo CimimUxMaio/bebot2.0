@@ -24,10 +24,8 @@ class MusicCog(Cog, name="Music"):
         # Take song(s) from attachment file
         elif len(attachments) > 0:
             file_content = await attachments[0].read()
-            print(file_content)
             # Remove windows \r characters.
             search_list = file_content.decode("utf-8").replace("\r", "").split("\n")
-            print(search_list)
 
         else:
             raise exceptions.NoSearchesProvided()
