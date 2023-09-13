@@ -1,5 +1,5 @@
 from discord import Color, Embed
-from discord.ext.commands import Command, CommandError
+from discord.ext.commands import CommandError
 
 
 class DomainException(CommandError):
@@ -10,6 +10,15 @@ class DomainException(CommandError):
 
 def GuildStateNotSetup(guild_id: int) -> DomainException:
     return DomainException(f"Guild state not found for {guild_id}")
+
+
+def NoSearchesProvided() -> DomainException:
+    message = " ".join([
+        "No songs where provided.",
+        "Please provide them as a \",\" separated list",
+        "or in a text file attachment separating songs line by line."
+    ])
+    return DomainException(message)
 
 
 def SongNotFound(search: str) -> DomainException:

@@ -4,8 +4,8 @@ import src.messages.queue as queuemsg
 
 from discord.ext.commands import Context, command
 from discord.ext.commands.cog import Cog
-from typing import cast
 from discord import Guild, Member, VoiceChannel
+from typing import cast
 from src.music.client import MusicClient
 from src.bebot import Bebot
 from src.utils import SuperContext
@@ -16,15 +16,30 @@ class MusicCog(Cog, name="Music"):
         self.bot = bot
 
     @command(aliases=["p"], name="play", help="Queue the given song (or \",\" separated songs).")
-    async def play(self, ctx: Context, *, searches: str):
+    async def play(self, ctx: Context, *, searches: str | None = None):
+        attachments = ctx.message.attachments
+        if searches and len(searches.strip()) != 0:  # Take song(s) from arguments
+            search_list = searches.split(",")
+
+        # Take song(s) from attachment file
+        elif len(attachments) > 0:
+            file_content = await attachments[0].read()
+            print(file_content)
+            # Remove windows \r characters.
+            search_list = file_content.decode("utf-8").replace("\r", "").split("\n")
+            print(search_list)
+
+        else:
+            raise exceptions.NoSearchesProvided()
+
         music_client = self.get_music_client(ctx)
         voice_channel: VoiceChannel = ctx.author.voice.channel  # type: ignore
         await music_client.connect(voice_channel)
 
-        search_list = searches.split(",")
-        for search in search_list:
-            song = await music_service.download_song(search)
-            await music_client.queue(song)
+        async with ctx.typing():
+            for search in search_list:
+                song = await music_service.download_song(search)
+                await music_client.queue(song)
 
     @command(aliases=["sk"], name="skip", help="Skips the current song.")
     async def skip(self, ctx: Context):
