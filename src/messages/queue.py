@@ -28,7 +28,7 @@ async def send(ctx: utils.SuperContext, music_client: MusicClient):
         current_title = current_song.title
         titles = [
             f"{pos}. {song.title}"
-            for pos, song in enumerate(music_client.queue(), start=1)
+            for pos, song in enumerate(music_client.list_queue(), start=1)
         ]
         queue_pages = generate_queue_pages(current_title, titles)
     await pagesmsg.send(ctx, queue_pages)

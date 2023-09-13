@@ -31,7 +31,7 @@ class MusicClient:
     def is_connected(self):
         return self.voice_client is not None and self.voice_client.is_connected()
 
-    def queue(self) -> list[Song]:
+    def list_queue(self) -> list[Song]:
         return list(self._queue.__dict__["_queue"])
 
     async def play_loop(self):
@@ -105,7 +105,7 @@ class MusicClient:
         self.audio_player.cancel()
         await self.finish()
 
-    async def queue_songs(self, songs: list[Song]):
+    async def queue(self, *songs: Song):
         for song in songs:
             await self._queue.put(song)
 

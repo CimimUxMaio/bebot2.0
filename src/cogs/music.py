@@ -15,13 +15,16 @@ class MusicCog(Cog, name="Music"):
     def __init__(self, bot: Bebot):
         self.bot = bot
 
-    @command(aliases=["p"], name="play", help="Queue the given song.")
-    async def play(self, ctx: Context, *, search: str):
-        songs = music_service.search_songs(search)
+    @command(aliases=["p"], name="play", help="Queue the given song (or \",\" separated songs).")
+    async def play(self, ctx: Context, *, searches: str):
         music_client = self.get_music_client(ctx)
         voice_channel: VoiceChannel = ctx.author.voice.channel  # type: ignore
         await music_client.connect(voice_channel)
-        await music_client.queue_songs(songs)
+
+        search_list = searches.split(",")
+        for search in search_list:
+            song = await music_service.download_song(search)
+            await music_client.queue(song)
 
     @command(aliases=["sk"], name="skip", help="Skips the current song.")
     async def skip(self, ctx: Context):
