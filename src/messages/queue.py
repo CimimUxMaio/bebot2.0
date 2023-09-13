@@ -8,7 +8,8 @@ from src.music.client import MusicClient
 
 def queue_group_page(current, titles) -> Embed:
     embed = Embed(title=strings.QUEUE_CURRENT % f'"{current}"')
-    embed.add_field(name="\a", value="\n".join(titles))
+    # ** ** is a hack to get an empty field name.
+    embed.add_field(name="** **", value="\n".join(titles))
     return embed
 
 
