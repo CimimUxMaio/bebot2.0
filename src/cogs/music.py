@@ -64,12 +64,6 @@ class MusicCog(Cog, name="Music"):
     @leave.before_invoke
     async def check_voice_channel(self, ctx: Context):
         await SuperContext(self.bot, ctx).check_voice_channel()
-        # author = cast(Member, ctx.author)
-        # if not author.voice or not author.voice.channel:
-        #     raise exceptions.UserNotConnectedToVoiceChannel()
-
-        # if ctx.voice_client and ctx.voice_client.channel != author.voice.channel:
-        #     raise exceptions.BotConnectedToAnotherChannel()
 
     def get_music_client(self, ctx: Context) -> MusicClient:
         guild = cast(Guild, ctx.guild)
@@ -86,7 +80,7 @@ class MusicCog(Cog, name="Music"):
 
         return True
 
-    async def cog_after_invoke(self, ctx: Context):
+    async def cog_before_invoke(self, ctx: Context):
         await ctx.message.add_reaction("\N{OK HAND SIGN}")
 
 
