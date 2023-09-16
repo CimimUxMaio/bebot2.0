@@ -3,7 +3,7 @@ import src.messages.mainmsg as mainmsg
 import src.exceptions as exceptions
 import src.strings as strings
 
-from discord import Guild, Message, TextChannel
+from discord import CategoryChannel, Guild, Message, TextChannel
 from discord.ext.commands import Bot
 from src.guildstaterepo import GuildState, GuildStateRepo
 from src.music.client import MusicClient
@@ -17,7 +17,7 @@ class Bebot(Bot):
 
     async def setup_hook(self):
         # Load cogs
-        cogs = ["music"]
+        cogs = ["music", "config"]
         for name in cogs:
             await self.load_extension(f"src.cogs.{name}")
 
@@ -43,44 +43,94 @@ class Bebot(Bot):
         await self.setup_guild(guild)
 
     async def on_guild_remove(self, guild: Guild):
-        self.state_repo.delete(guild.id)
+        await self.state_repo.delete(guild.id)
 
     async def setup_guilds(self):
         for guild in self.guilds:
             await self.setup_guild(guild)
 
-    async def setup_guild(self, guild: Guild):
-        main_message = await self.setup_main_channel(guild)
+    async def setup_guild(self, guild: Guild) -> Message:
+        # Delete old state if any
+        await self.state_repo.delete(guild.id)
+
+        main_category = await self.get_or_create_main_category(guild)
+        main_channel = await self.get_or_create_main_channel(guild, main_category)
+        main_message = await self.create_main_message(main_channel)
+
+        playlists_channel = await self.get_or_create_playlists_channel(guild, main_category)
+        await self.clean_playlists_channel(playlists_channel)
+
+        # Store new guild state on guild repository
         state = GuildState(
             main_message_id=main_message.id,
-            music_client=MusicClient(bot=self, guild_id=guild.id),
+            music_client=MusicClient(bot=self, guild_id=guild.id)
         )
+
         self.state_repo.store(guild.id, state)
+        return main_message
 
-    async def setup_main_channel(self, guild: Guild) -> Message:
+    async def get_or_create_main_category(self, guild: Guild) -> CategoryChannel:
+        # Create category if it does not exist
+        category = discord_utils.get(guild.categories, name=strings.MAIN_CATEGORY_NAME)
+        if not category:
+            category = await guild.create_category(strings.MAIN_CATEGORY_NAME, position=0)
+        return category
+
+    def get_main_channel(self, guild: Guild) -> TextChannel | None:
+        return discord_utils.get(guild.text_channels, name=strings.MAIN_CHANNEL_NAME)
+
+    async def get_or_create_main_channel(
+            self, guild: Guild, category: CategoryChannel) -> TextChannel:
         # Create text channel if it does not exist
-        main_channel = discord_utils.get(
-            guild.text_channels, name=strings.MAIN_CHANNEL_NAME
-        )
-        if not main_channel:
-            main_channel = await guild.create_text_channel(strings.MAIN_CHANNEL_NAME)
+        channel = self.get_main_channel(guild)
+        if not channel:
+            channel = await guild.create_text_channel(strings.MAIN_CHANNEL_NAME, category=category)
+        return channel
 
+    def get_playlists_channel(self, guild: Guild) -> TextChannel | None:
+        return discord_utils.get(guild.text_channels, name=strings.PLAYLISTS_CHANNEL_NAME)
+
+    async def clean_playlists_channel(self, playlists_channel: TextChannel):
+        def is_valid_playlist(message: Message) -> bool:
+            return len(message.attachments) == 0
+
+        # Remove all invalid playlist message
+        await playlists_channel.purge(limit=200, check=is_valid_playlist)
+
+    async def get_or_create_playlists_channel(
+            self, guild: Guild, category: CategoryChannel) -> TextChannel:
+        playlist_channel = self.get_playlists_channel(guild)
+
+        # Create text channel if it does not exist
+        if not playlist_channel:
+            playlist_channel = await guild.create_text_channel(
+                strings.PLAYLISTS_CHANNEL_NAME, category=category
+            )
+        return playlist_channel
+
+    async def get_main_message(self, guild: Guild) -> Message | None:
+        return await self.state_repo.fetch_main_message(guild.id)
+
+    async def create_main_message(self, main_channel: TextChannel) -> Message:
         # Remove all messages from the channel
-        await main_channel.purge(limit=None)
+        await main_channel.purge(limit=200)
 
         # Send main message
         return await mainmsg.send(self, main_channel)
 
-    async def fetch_or_set_main_message(self, guild_id: int) -> Message:
-        main_message = await self.state_repo.fetch_main_message(guild_id)
-        if main_message:
-            return main_message
+    # async def get_or_create_main_message(self, guild: Guild) -> Message:
+    #     # Fetch main message from state repo
+    #     main_message = await self.state_repo.fetch_main_message(guild.id)
+    #     if main_message:
+    #         return main_message
 
+    #     return await self.setup_guild(guild)
+
+    def find_guild(self, guild_id: int) -> Guild:
         guild = self.get_guild(guild_id)
         if not guild:
             raise exceptions.GuildNotFound(guild_id)
-
-        return await self.setup_main_channel(guild)
+        return guild
 
     async def on_command_error(self, ctx, error):
         await exceptions.exception_handler(ctx=SuperContext(self, ctx), exception=error)

@@ -27,8 +27,11 @@ class GuildStateRepo:
     def store(self, guild_id: int, state: GuildState):
         self._repo[guild_id] = state
 
-    def delete(self, guild_id: int):
-        del self._repo[guild_id]
+    async def delete(self, guild_id: int):
+        if self.contains(guild_id):
+            music_client = self.get_music_client(guild_id)
+            await music_client.disconnect()
+            del self._repo[guild_id]
 
     def get(self, guild_id: int) -> GuildState:
         # Fail if guild was not setup

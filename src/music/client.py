@@ -15,7 +15,8 @@ class MusicState:
 
 class MusicClient:
     def __init__(self, bot, guild_id: int):
-        self.bot = bot
+        from src.bebot import Bebot
+        self.bot: Bebot = bot
         self.guild_id = guild_id
 
         self.voice_client: VoiceClient | None = None
@@ -128,7 +129,12 @@ class MusicClient:
         vc.stop()
 
     async def send_update(self):
-        main_message = await self.bot.fetch_or_set_main_message(self.guild_id)
+        guild = self.bot.find_guild(self.guild_id)
+
+        main_message = await self.bot.get_main_message(guild)
+        if not main_message:
+            raise exceptions.MainMessageNotFound()
+
         await mainmsg.update(main_message, self.state())
 
     def state(self) -> MusicState:
