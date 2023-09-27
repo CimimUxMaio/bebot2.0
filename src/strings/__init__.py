@@ -13,3 +13,7 @@ LEAVE_BUTTON_LABEL = "Leave"
 QUEUE_NOTHING_PLAYING = "Tengo la cola vacia :("
 QUEUE_CURRENT = "Ahora: %s"
 QUEUE_PAGE_FOOTER = "Pagina %s/%s"
+
+NO_PLAYLISTS_AVAILABLE = \
+    "No hay ninguna playlist en el canal de playlists, " + \
+    "agregá una subiendo un archivo con el nombre de la playlist al canal de texto."

@@ -1,6 +1,7 @@
 import src.music.service as music_service
 import src.exceptions as exceptions
 import src.messages.queue as queuemsg
+import src.messages.playlists as playlistsmsg
 import os
 import re
 
@@ -72,13 +73,7 @@ class MusicCog(BaseCog, name="Music"):
     async def playlists(self, ctx: Context):
         playlists = await self.get_playlists(cast(Guild, ctx.guild))
         names = [os.path.splitext(playlist.filename)[0] for playlist in playlists]
-        response_message = "\n".join([f"- {name}" for name in names])
-        if len(playlists) == 0:
-            response_message = " ".join([
-                "No hay ninguna playlist en el canal de playlists, "
-                "agregá una subiendo un archivo con el nombre de la playlist al canal de texto."
-            ])
-        await ctx.send(response_message)
+        await playlistsmsg.send(SuperContext(self.bot, ctx), names)
 
     async def get_playlists(self, guild: Guild) -> list[Attachment]:
         playlists_channel = self.bot.get_playlists_channel(guild)

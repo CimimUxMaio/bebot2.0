@@ -8,7 +8,6 @@ from discord import Embed, Interaction, Message, TextChannel
 from src.guildstaterepo import GuildState
 from src.music.client import MusicClient, MusicState
 from typing import Any, cast
-from discord.ext.commands import Bot
 from src.utils import SuperContext
 
 
