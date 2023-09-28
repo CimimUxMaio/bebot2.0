@@ -6,6 +6,7 @@ from discord import VoiceClient
 from asyncio import Queue, Event
 from src.music.service import Song
 from dataclasses import dataclass
+from random import shuffle
 
 
 @dataclass
@@ -34,6 +35,13 @@ class MusicClient:
 
     def list_queue(self) -> list[Song]:
         return list(self._queue.__dict__["_queue"])
+
+    def shuffle_queue(self):
+        queue = self.list_queue()
+        shuffle(queue)
+        self._queue = Queue()
+        for song in queue:
+            self._queue.put_nowait(song)
 
     async def play_loop(self):
         try:

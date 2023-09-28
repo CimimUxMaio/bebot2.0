@@ -9,6 +9,7 @@ PLAY_STOP_BUTTON_LABEL = "Stop/Resume"
 NEXT_BUTTON_LABEL = "Next"
 QUEUE_BUTTON_LABEL = "Queue"
 LEAVE_BUTTON_LABEL = "Leave"
+SHUFFLE_BUTTON_LABEL = "Shuffle"
 
 QUEUE_NOTHING_PLAYING = "Tengo la cola vacia :("
 QUEUE_CURRENT = "Ahora: %s"

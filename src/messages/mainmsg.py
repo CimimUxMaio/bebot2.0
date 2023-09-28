@@ -98,6 +98,13 @@ class MainView(ui.View):
     async def leave(self, *_, music_client: MusicClient):
         await music_client.disconnect()
 
+    @ui.button(label=strings.SHUFFLE_BUTTON_LABEL)  # type: ignore
+    @no_response
+    @when_connected
+    @check_voice_channel
+    async def shuffle_queue(self, *_, music_client: MusicClient):
+        music_client.shuffle_queue()
+
     def get_music_client(self, guild_id: int) -> MusicClient:
         state: GuildState = self.bot.state_repo.get(guild_id)
         return state.music_client

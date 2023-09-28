@@ -68,6 +68,10 @@ class MusicCog(BaseCog, name="Music"):
         music_client = self.get_music_client(ctx)
         await queuemsg.send(SuperContext(self.bot, ctx), music_client)
 
+    @command(aliases=["sh"], name="shuffle", help="Shuffles the current music queue.")
+    async def shuffle(self, ctx: Context):
+        self.get_music_client(ctx).shuffle_queue()
+
     @command(
         name="playlists", help="Shows all available playlist names from the playlists channel.")
     async def playlists(self, ctx: Context):
