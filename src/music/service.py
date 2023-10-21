@@ -43,7 +43,10 @@ def download_song_sync(search: str) -> Song:
         if is_url(search):  # type: ignore
             url = search
 
+    try:
         info = ydl.extract_info(url, download=False)
+    except:  # noqa: E722
+        raise exceptions.SongNotFound(search)
 
     if not isinstance(info, dict):
         raise exceptions.UnexpectedSongResponse(search)

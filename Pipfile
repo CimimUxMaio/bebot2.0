@@ -8,6 +8,7 @@ python-dotenv = "*"
 "discord.py" = {extras = ["voice"], version = "*"}
 validators = "*"
 youtube-dl = {git = "https://github.com/ytdl-org/youtube-dl.git"}
+pillow = "*"
 
 [dev-packages]
 
