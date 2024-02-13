@@ -21,7 +21,11 @@ class MusicCog(BaseCog, name="Music"):
     def __init__(self, bot: Bebot):
         self.bot = bot
 
-    @command(aliases=["p"], name="play", help="Queue the given song (or \",\" separated songs).")
+    @command(
+        aliases=["p"],
+        name="play",
+        help='Queue the given song (or "," separated songs).',
+    )
     async def play(self, ctx: Context, *, searches: str | None = None):
         guild = cast(Guild, ctx.guild)
         attachments = ctx.message.attachments
@@ -51,41 +55,48 @@ class MusicCog(BaseCog, name="Music"):
         voice_channel: VoiceChannel = ctx.author.voice.channel  # type: ignore
         await music_client.connect(voice_channel)
 
-        async with ProgressBar(ctx, "Loading songs", len(search_list)) as progress_bar:
-            for search in search_list:
-                try:
-                    song = await music_service.download_song(search)
-                    await music_client.queue(song)
-                except DomainError as e:
-                    await exception_handler(SuperContext(self.bot, ctx), e)
+        if len(search_list) == 1:
+            search = search_list[0]
+            await self.search_and_queue(music_client, search)
+        else:
+            async with ProgressBar(
+                ctx, "Loading songs", len(search_list)
+            ) as progress_bar:
+                for search in search_list:
+                    await self.search_and_queue(music_client, search)
+                    await progress_bar.progress()
 
-                await progress_bar.progress()
-
-    @ command(aliases=["sk"], name="skip", help="Skips the current song.")
+    @command(aliases=["sk"], name="skip", help="Skips the current song.")
     async def skip(self, ctx: Context):
         self.get_music_client(ctx).skip_current_song()
 
-    @ command(aliases=["st"],
-              name="stop",
-              help="Stops / resumes the song that is currently playing.")
+    @command(
+        aliases=["st"],
+        name="stop",
+        help="Stops / resumes the song that is currently playing.",
+    )
     async def stop(self, ctx: Context):
         self.get_music_client(ctx).toggle_pause_resume()
 
-    @ command(aliases=["l"], name="leave", help="Disconnects Bebot from the voice channel.")
+    @command(
+        aliases=["l"], name="leave", help="Disconnects Bebot from the voice channel."
+    )
     async def leave(self, ctx: Context):
         await self.get_music_client(ctx).disconnect()
 
-    @ command(aliases=["q"], name="queue", help="Show the current music queue.")
+    @command(aliases=["q"], name="queue", help="Show the current music queue.")
     async def queue(self, ctx: Context):
         music_client = self.get_music_client(ctx)
         await queuemsg.send(SuperContext(self.bot, ctx), music_client)
 
-    @ command(aliases=["sh"], name="shuffle", help="Shuffles the current music queue.")
+    @command(aliases=["sh"], name="shuffle", help="Shuffles the current music queue.")
     async def shuffle(self, ctx: Context):
         self.get_music_client(ctx).shuffle_queue()
 
-    @ command(
-        name="playlists", help="Shows all available playlist names from the playlists channel.")
+    @command(
+        name="playlists",
+        help="Shows all available playlist names from the playlists channel.",
+    )
     async def playlists(self, ctx: Context):
         playlists = await self.get_playlists(cast(Guild, ctx.guild))
         names = [self._playlist_name(playlist) for playlist in playlists]
@@ -96,14 +107,20 @@ class MusicCog(BaseCog, name="Music"):
         if not playlists_channel:
             raise exceptions.PlaylistsChannelNotFound()
 
-        playlists = [msg async for msg in playlists_channel.history(limit=200)
-                     if len(msg.attachments) > 0]
+        playlists = [
+            msg
+            async for msg in playlists_channel.history(limit=200)
+            if len(msg.attachments) > 0
+        ]
         return [msg.attachments[0] for msg in playlists]
 
     async def find_playlist(self, guild: Guild, name: str) -> Attachment:
         available_playlists = await self.get_playlists(guild)
-        matches = (playlist for playlist in available_playlists
-                   if self._playlist_name(playlist) == name)
+        matches = (
+            playlist
+            for playlist in available_playlists
+            if self._playlist_name(playlist) == name
+        )
         match = next(matches, None)
         if not match:
             raise exceptions.PlaylistNotFound(name)
@@ -117,10 +134,17 @@ class MusicCog(BaseCog, name="Music"):
         # Remove windows \r characters.
         return file_content.decode("utf-8").replace("\r", "").split("\n")
 
-    @ play.before_invoke
-    @ skip.before_invoke
-    @ stop.before_invoke
-    @ leave.before_invoke
+    async def search_and_queue(self, music_client: MusicClient, search: str):
+        try:
+            song = await music_service.download_song(search)
+            await music_client.queue(song)
+        except DomainError as e:
+            await exception_handler(SuperContext(self.bot, ctx), e)
+
+    @play.before_invoke
+    @skip.before_invoke
+    @stop.before_invoke
+    @leave.before_invoke
     async def check_voice_channel(self, ctx: Context):
         await SuperContext(self.bot, ctx).check_voice_channel()
 
