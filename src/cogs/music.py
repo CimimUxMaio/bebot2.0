@@ -24,7 +24,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         aliases=["p"],
         name="play",
-        help='Queue the given song (or "," separated songs).',
+        help='Queue the given song (or "," separated songs). You can also queue a playlist by typing **playlist_name**.',
     )
     async def play(self, ctx: Context, *, searches: str | None = None):
         guild = cast(Guild, ctx.guild)
@@ -32,7 +32,7 @@ class MusicCog(BaseCog, name="Music"):
 
         search_list = []
         if searches:
-            if playlist_match := re.match(r"\[([\w\d\s_-]+)\]", searches):
+            if playlist_match := re.match(r"^\*\*([\w\d\s_-]+)\*\*$", searches):
                 playlist_name = playlist_match.group(1)
                 playlist = await self.find_playlist(guild, playlist_name)
                 search_list = await self.read_playlist(playlist)
@@ -57,13 +57,13 @@ class MusicCog(BaseCog, name="Music"):
 
         if len(search_list) == 1:
             search = search_list[0]
-            await self.search_and_queue(music_client, search)
+            await self.search_and_queue(ctx, music_client, search)
         else:
             async with ProgressBar(
                 ctx, "Loading songs", len(search_list)
             ) as progress_bar:
                 for search in search_list:
-                    await self.search_and_queue(music_client, search)
+                    await self.search_and_queue(ctx, music_client, search)
                     await progress_bar.progress()
 
     @command(aliases=["sk"], name="skip", help="Skips the current song.")
@@ -134,7 +134,7 @@ class MusicCog(BaseCog, name="Music"):
         # Remove windows \r characters.
         return file_content.decode("utf-8").replace("\r", "").split("\n")
 
-    async def search_and_queue(self, music_client: MusicClient, search: str):
+    async def search_and_queue(self, ctx, music_client: MusicClient, search: str):
         try:
             song = await music_service.download_song(search)
             await music_client.queue(song)
