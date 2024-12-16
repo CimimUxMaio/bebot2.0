@@ -13,6 +13,7 @@ from src.bebot import Bebot
 from src.cogs.base import BaseCog
 from src.model.music.musicplayer import MusicPlayer
 from src.model.music.song import Song, SongInfo
+from src.strings import commands as commandstr
 
 NUMBER_EMOJIS = [
     emoji.emojize(alias, language="alias")
@@ -73,7 +74,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="play",
         aliases=["p"],
-        description="Search and enqueue the given song name.",
+        description=commandstr.PLAY_DESC,
     )
     @check_voice_requirements
     @with_status_message
@@ -89,7 +90,7 @@ class MusicCog(BaseCog, name="Music"):
 
         # If the user does not select a song, delete the results message and return
         if url is None or len(url) == 0:
-            await ctx.reply("No seleccionó ninguna canción. Vuelva a intentarlo.")
+            await ctx.reply(commandstr.PLAY_SELECTION_TIMEOUT)
             return
 
         # Search song by url and add it to the queue
@@ -102,9 +103,9 @@ class MusicCog(BaseCog, name="Music"):
                 channel: VocalGuildChannel = cast(VoiceState, ctx.author.voice).channel  # type: ignore
                 await music_player.connect(channel)
 
-            await ctx.reply(f'Se agregó "{song.info.title}" a la cola.')
+            await ctx.reply(commandstr.PLAY_ADDED_TO_QUEUE.format(song.info.title))
 
-    @command(name="pause", description="Pauses or resumes the music player.")
+    @command(name="pause", description=commandstr.PAUSE_DESC)
     @check_voice_requirements
     @with_status_message
     async def pause(self, ctx: Context):
@@ -112,7 +113,7 @@ class MusicCog(BaseCog, name="Music"):
 
     @command(
         name="stop",
-        description="Stops the music player and clears the queue.",
+        description=commandstr.STOP_DESC,
     )
     @check_voice_requirements
     @with_status_message
@@ -122,7 +123,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="skip",
         aliases=["next", "s"],
-        description="Skips the song that is currently playing if any.",
+        description=commandstr.SKIP_DESC,
     )
     @check_voice_requirements
     @with_status_message
@@ -132,7 +133,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="queue",
         aliases=["q"],
-        description="Show all currently queued songs.",
+        description=commandstr.QUEUE_DESC,
     )
     async def queue(self, ctx: Context):
         guild_id = cast(Guild, ctx.guild).id
@@ -180,11 +181,13 @@ class MusicCog(BaseCog, name="Music"):
         self.last_status[guild_id] = message
 
     def search_results_embed(self, results: list[SongInfo]):
-        embed = Embed(title="Resultados de Búsqueda", color=Color.blue())
+        embed = Embed(title=commandstr.SONG_SELECTION_TITLE, color=Color.blue())
 
         for i, info in enumerate(results):
-            author = f"Autor: {info.author}"
-            duration = "Duración: %02i:%02i:%02i" % info.duration
+            author = f"{commandstr.SONG_AUTHOR_LABEL} {info.author}"
+            duration = (
+                f"{commandstr.SONG_DURATION_LABEL} %02i:%02i:%02i" % info.duration
+            )
 
             embed.add_field(
                 name=f"{NUMBER_EMOJIS[i]} {info.title}",
@@ -192,7 +195,7 @@ class MusicCog(BaseCog, name="Music"):
                 inline=False,
             )
 
-        embed.set_footer(text="Selecciona la canción que deseas reproducir.")
+        embed.set_footer(text=commandstr.SONG_SELECTION_FOOTER)
         return embed
 
     async def song_selection(self, ctx: Context, search: str) -> str | None:
@@ -211,7 +214,7 @@ class MusicCog(BaseCog, name="Music"):
 
         try:
             reaction, _ = await self.bot.wait_for(
-                "reaction_add", check=check_reaction, timeout=10
+                "reaction_add", check=check_reaction, timeout=20
             )
         except TimeoutError:
             return None
@@ -227,16 +230,16 @@ class MusicCog(BaseCog, name="Music"):
         music_player = self.get_music_player(guild_id)
         song = music_player.get_current()
 
-        embed = Embed(title="Ahora:", color=Color.blue())
+        embed = Embed(title=commandstr.STATUS_MESSAGE_TITLE, color=Color.blue())
 
         if song is None:
-            embed.add_field(name="-", value="No hay canciones en la cola.")
+            embed.add_field(name="-", value=commandstr.STATUS_MESSAGE_EMPTY_QUEUE)
             return embed
 
         duracion = "%02i:%02i:%02i" % song.info.duration
         embed.add_field(
             name=song.info.title,
-            value=f"Duración: {duracion} - Autor: {song.info.author}",
+            value=f"{commandstr.SONG_DURATION_LABEL} {duracion} - {commandstr.SONG_AUTHOR_LABEL} {song.info.author}",
         )
         embed.set_thumbnail(url=song.thumbnail_url)
 
@@ -253,7 +256,9 @@ class MusicCog(BaseCog, name="Music"):
                 ]
             )
 
-        embed.add_field(name="Después:", value=queue_text, inline=False)
+        embed.add_field(
+            name=commandstr.STATUS_MESSAGE_QUEUE_TITLE, value=queue_text, inline=False
+        )
         return embed
 
     async def on_player_status_update(self, guild_id: int):
