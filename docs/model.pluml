@@ -1,0 +1,43 @@
+@startuml
+
+class GuildState <<dataclass>> {
+    music_player: MusicPlayer
+}
+
+class SongService {
+    + fetch_song(search: string): Song
+}
+
+class SongInfo <<dataclass>> {
+    title: string
+    description: string
+    thumbnail: string
+    webpage_url: string
+    channel: string
+    duration: (int, int, int)
+}
+
+class Song {
+    audio: FFmpegPCAudio
+}
+
+class MusicPlayer {
+    queue: list[Song]
+    ---
+    + add(song: Song)
+    + remove(index: int)
+    + shuffle()
+    + next()
+    + get_queue(): list[Song]
+    + get_current_song(): Song?
+    ---
+    + play(): Task
+    + stop(): Task
+}
+
+GuildState --> MusicPlayer
+MusicPlayer --> "*" Song
+SongService ..> Song
+Song -> SongInfo
+
+@enduml

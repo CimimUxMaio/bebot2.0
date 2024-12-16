@@ -1,168 +1,266 @@
-import src.music.service as music_service
+import emoji
 import src.exceptions as exceptions
-import src.messages.queue as queuemsg
-import src.messages.playlists as playlistsmsg
-import os
-import re
+import src.model.music.songservice as songservice
 
-from src.cogs.base import BaseCog
-from discord.ext.commands import Context, command
-from discord import Attachment, Guild, Member, VoiceChannel
+from functools import wraps
 from typing import cast
-from src.music.client import MusicClient
+from discord import Embed, Member, Guild, Message, NotFound, VoiceState, Color
+from discord.channel import VocalGuildChannel
+from discord.ext.commands import Context, command
+from validators.url import url as is_url
+
 from src.bebot import Bebot
-from src.utils import SuperContext
-from src.messages.progressbar import ProgressBar
-from random import shuffle
-from src.exceptions import exception_handler, DomainError
+from src.cogs.base import BaseCog
+from src.model.music.musicplayer import MusicPlayer
+from src.model.music.song import Song, SongInfo
+
+NUMBER_EMOJIS = [
+    emoji.emojize(alias, language="alias")
+    for alias in [
+        ":one:",
+        ":two:",
+        ":three:",
+        ":four:",
+        ":five:",
+        ":six:",
+        ":seven:",
+        ":eight:",
+        ":nine:",
+    ]
+]
+
+
+def check_voice_requirements(func):
+    @wraps(func)
+    async def decorator(self, ctx: Context, *args, **kwargs):
+        author = cast(Member, ctx.author)
+
+        # Check if the author is not connected to a voice channel
+        if author.voice is None or author.voice.channel is None:
+            raise exceptions.UserNotConnectedToVoiceChannel()
+
+        music_player = self.get_music_player(ctx)
+        channel = music_player.get_channel()
+
+        # Check if the bot is connected to a different voice channel
+        if channel is not None and channel != author.voice.channel:
+            raise exceptions.BotConnectedToAnotherChannel()
+
+        return await func(self, ctx, *args, **kwargs)
+
+    return decorator
+
+
+def with_status_message(func):
+    @wraps(func)
+    async def decorator(self, ctx: Context, *args, **kwargs):
+        await func(self, ctx, *args, **kwargs)
+        guild_id = cast(Guild, ctx.guild).id
+        message = await ctx.send(embed=self.status_message(guild_id))
+        self.update_last_status(ctx, message)
+
+    return decorator
 
 
 class MusicCog(BaseCog, name="Music"):
-    def __init__(self, bot: Bebot):
-        self.bot = bot
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.music_players: dict[int, MusicPlayer] = {}
+        self.last_status: dict[int, Message] = {}
+
+    # Commands #
 
     @command(
-        aliases=["p"],
         name="play",
-        help='Queue the given song (or "," separated songs). You can also queue a playlist by typing **playlist_name**.',
+        aliases=["p"],
+        description="Search and enqueue the given song name.",
     )
-    async def play(self, ctx: Context, *, searches: str | None = None):
-        guild = cast(Guild, ctx.guild)
-        attachments = ctx.message.attachments
+    @check_voice_requirements
+    @with_status_message
+    async def play(self, ctx: Context, *, search: str):
+        music_player = self.get_music_player(cast(Guild, ctx.guild).id)
 
-        search_list = []
-        if searches:
-            if playlist_match := re.match(r"^\*\*([\w\d\s_-]+)\*\*$", searches):
-                playlist_name = playlist_match.group(1)
-                playlist = await self.find_playlist(guild, playlist_name)
-                search_list = await self.read_playlist(playlist)
-                shuffle(search_list)
+        search = search.strip()
 
-            else:  # Take song(s) from arguments
-                search_list = searches.split(",")
+        url = search
+        if not is_url(search):
+            # Send song selection message
+            url = await self.song_selection(ctx, search)
 
-        # Take song(s) from attachment file
-        elif len(attachments) > 0:
-            search_list = await self.read_playlist(attachments[0])
+        # If the user does not select a song, delete the results message and return
+        if url is None or len(url) == 0:
+            await ctx.reply("No seleccionó ninguna canción. Vuelva a intentarlo.")
+            return
 
-        # Remove invalid searches like empty strings
-        search_list = [search for search in search_list if len(search) > 0]
+        # Search song by url and add it to the queue
+        async with ctx.typing():
+            song: Song = await songservice.ytdl_get_song(url)
+            await music_player.add(song)
 
-        if len(search_list) == 0:
-            raise exceptions.NoSearchesProvided()
+            # If the player is not connected, connect to the author's voice channel
+            if not music_player.is_connected():
+                channel: VocalGuildChannel = cast(VoiceState, ctx.author.voice).channel  # type: ignore
+                await music_player.connect(channel)
 
-        music_client = self.get_music_client(ctx)
-        voice_channel: VoiceChannel = ctx.author.voice.channel  # type: ignore
-        await music_client.connect(voice_channel)
+            await ctx.reply(f'Se agregó "{song.info.title}" a la cola.')
 
-        if len(search_list) == 1:
-            search = search_list[0]
-            await self.search_and_queue(ctx, music_client, search)
-        else:
-            async with ProgressBar(
-                ctx, "Loading songs", len(search_list)
-            ) as progress_bar:
-                for search in search_list:
-                    await self.search_and_queue(ctx, music_client, search)
-                    await progress_bar.progress()
-
-    @command(aliases=["sk"], name="skip", help="Skips the current song.")
-    async def skip(self, ctx: Context):
-        self.get_music_client(ctx).skip_current_song()
+    @command(name="pause", description="Pauses or resumes the music player.")
+    @check_voice_requirements
+    @with_status_message
+    async def pause(self, ctx: Context):
+        await self.get_music_player(cast(Guild, ctx.guild).id).toggle_pause_resume()
 
     @command(
-        aliases=["st"],
         name="stop",
-        help="Stops / resumes the song that is currently playing.",
+        description="Stops the music player and clears the queue.",
     )
+    @check_voice_requirements
+    @with_status_message
     async def stop(self, ctx: Context):
-        self.get_music_client(ctx).toggle_pause_resume()
+        await self.get_music_player(cast(Guild, ctx.guild).id).stop()
 
     @command(
-        aliases=["l"], name="leave", help="Disconnects Bebot from the voice channel."
+        name="skip",
+        aliases=["next", "s"],
+        description="Skips the song that is currently playing if any.",
     )
-    async def leave(self, ctx: Context):
-        await self.get_music_client(ctx).disconnect()
+    @check_voice_requirements
+    @with_status_message
+    async def skip(self, ctx: Context):
+        self.get_music_player(cast(Guild, ctx.guild).id).next()
 
-    @command(aliases=["q"], name="queue", help="Show the current music queue.")
+    @command(
+        name="queue",
+        aliases=["q"],
+        description="Show all currently queued songs.",
+    )
     async def queue(self, ctx: Context):
-        music_client = self.get_music_client(ctx)
-        await queuemsg.send(SuperContext(self.bot, ctx), music_client)
+        guild_id = cast(Guild, ctx.guild).id
+        message = await ctx.reply(embed=self.status_message(guild_id))
+        self.update_last_status(ctx, message)
 
-    @command(aliases=["sh"], name="shuffle", help="Shuffles the current music queue.")
-    async def shuffle(self, ctx: Context):
-        self.get_music_client(ctx).shuffle_queue()
+    # Utility methods #
 
-    @command(
-        name="playlists",
-        help="Shows all available playlist names from the playlists channel.",
-    )
-    async def playlists(self, ctx: Context):
-        playlists = await self.get_playlists(cast(Guild, ctx.guild))
-        names = [self._playlist_name(playlist) for playlist in playlists]
-        await playlistsmsg.send(SuperContext(self.bot, ctx), names)
+    def get_music_player(self, guild_id: int) -> MusicPlayer:
+        player = self.music_players.get(guild_id, None)
 
-    async def get_playlists(self, guild: Guild) -> list[Attachment]:
-        playlists_channel = self.bot.get_playlists_channel(guild)
-        if not playlists_channel:
-            raise exceptions.PlaylistsChannelNotFound()
+        # Return existing music player
+        if player is not None:
+            return player
 
-        playlists = [
-            msg
-            async for msg in playlists_channel.history(limit=200)
-            if len(msg.attachments) > 0
-        ]
-        return [msg.attachments[0] for msg in playlists]
+        # Initialize new music player if none found
+        player = MusicPlayer()
 
-    async def find_playlist(self, guild: Guild, name: str) -> Attachment:
-        available_playlists = await self.get_playlists(guild)
-        matches = (
-            playlist
-            for playlist in available_playlists
-            if self._playlist_name(playlist) == name
-        )
-        match = next(matches, None)
-        if not match:
-            raise exceptions.PlaylistNotFound(name)
-        return match
+        def on_status_update():
+            return self.on_player_status_update(guild_id)
 
-    def _playlist_name(self, playlist: Attachment) -> str:
-        return os.path.splitext(playlist.filename)[0]
+        self.bot.loop.create_task(
+            player.run(on_status_update)
+        )  # Start the music player
+        self.music_players[guild_id] = player
 
-    async def read_playlist(self, playlist: Attachment) -> list[str]:
-        file_content = await playlist.read()
-        # Remove windows \r characters.
-        return file_content.decode("utf-8").replace("\r", "").split("\n")
+        return player
 
-    async def search_and_queue(self, ctx, music_client: MusicClient, search: str):
+    async def get_last_status(self, guild_id: int) -> Message | None:
+        message = self.last_status.get(guild_id, None)
+
+        if message is not None:
+            try:
+                # Check if the message still exists
+                message = await message.fetch()
+            except NotFound:
+                # If not, remove it from the last status dictionary
+                del self.last_status[guild_id]
+                message = None
+
+        return message
+
+    def update_last_status(self, ctx: Context, message: Message):
+        guild_id = cast(Guild, ctx.guild).id
+        self.last_status[guild_id] = message
+
+    def search_results_embed(self, results: list[SongInfo]):
+        embed = Embed(title="Resultados de Búsqueda", color=Color.blue())
+
+        for i, info in enumerate(results):
+            author = f"Autor: {info.author}"
+            duration = "Duración: %02i:%02i:%02i" % info.duration
+
+            embed.add_field(
+                name=f"{NUMBER_EMOJIS[i]} {info.title}",
+                value=f"{author} - {duration}",
+                inline=False,
+            )
+
+        embed.set_footer(text="Selecciona la canción que deseas reproducir.")
+        return embed
+
+    async def song_selection(self, ctx: Context, search: str) -> str | None:
+        # Search youtube results
+        async with ctx.typing():
+            results = await songservice.ytdl_search_info(search)
+            results_msg = await ctx.reply(embed=self.search_results_embed(results))
+
+        # Add show selection embed menu
+        options = NUMBER_EMOJIS[: len(results)]
+        for option in options:
+            await results_msg.add_reaction(option)
+
+        def check_reaction(reaction, user):
+            return user == ctx.author and str(reaction) in options
+
         try:
-            song = await music_service.download_song(search)
-            await music_client.queue(song)
-        except DomainError as e:
-            await exception_handler(SuperContext(self.bot, ctx), e)
+            reaction, _ = await self.bot.wait_for(
+                "reaction_add", check=check_reaction, timeout=10
+            )
+        except TimeoutError:
+            return None
+        finally:
+            # Remove the selection menu after the selection process
+            await results_msg.delete()
 
-    @play.before_invoke
-    @skip.before_invoke
-    @stop.before_invoke
-    @leave.before_invoke
-    async def check_voice_channel(self, ctx: Context):
-        await SuperContext(self.bot, ctx).check_voice_channel()
+        # Get the selected song index
+        selection = options.index(str(reaction))
+        return results[selection].url
 
-    def get_music_client(self, ctx: Context) -> MusicClient:
-        guild = cast(Guild, ctx.guild)
-        state = self.bot.state_repo.get(guild.id)
-        return state.music_client
+    def status_message(self, guild_id: int) -> Embed:
+        music_player = self.get_music_player(guild_id)
+        song = music_player.get_current()
 
-    # Framework methods #
+        embed = Embed(title="Ahora:", color=Color.blue())
 
-    def cog_check(self, ctx: Context) -> bool:
-        if not ctx.guild:
-            raise exceptions.NotAGuildMessage()
+        if song is None:
+            embed.add_field(name="-", value="No hay canciones en la cola.")
+            return embed
 
-        if not isinstance(ctx.author, Member):
-            raise exceptions.AuthorTypeIsNotMember()
+        duracion = "%02i:%02i:%02i" % song.info.duration
+        embed.add_field(
+            name=song.info.title,
+            value=f"Duración: {duracion} - Autor: {song.info.author}",
+        )
+        embed.set_thumbnail(url=song.thumbnail_url)
 
-        return True
+        queue_text = "-"
+        queue = music_player.get_queue()
+        if len(queue) > 0:
+            queue_text = "\n".join(
+                [
+                    # Replace whitespace with special blank character to prevent
+                    # discord from trimming initial whitespaces.
+                    # Used 2 digit length for the number to keep the alignment.
+                    f"{n:2d}. {song.info.title}".replace(" ", "\u1CBC")
+                    for n, song in enumerate(queue, start=1)
+                ]
+            )
+
+        embed.add_field(name="Después:", value=queue_text, inline=False)
+        return embed
+
+    async def on_player_status_update(self, guild_id: int):
+        status_msg = await self.get_last_status(guild_id)
+
+        if status_msg is not None:
+            await status_msg.edit(embed=self.status_message(guild_id))
 
 
 async def setup(bot: Bebot):
