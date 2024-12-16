@@ -27,4 +27,4 @@ class Bebot(Bot):
         embed = Embed(color=Color.red())
         embed.add_field(name="Error", value=error.message)
 
-        await ctx.send(embed=embed, delete_after=5)
+        await ctx.send(embed=embed, delete_after=5, ephemeral=True)
