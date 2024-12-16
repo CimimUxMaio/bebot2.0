@@ -33,7 +33,7 @@ class Bebot(Bot):
         embed = Embed(color=Color.red())
         embed.add_field(name="Error", value=message)
 
-        await ctx.send(embed=embed, delete_after=5, ephemeral=True)
+        await ctx.send(embed=embed, delete_after=20, ephemeral=True)
 
         # Print the error if it's not a user error
         if message == strings.UNEXPECTED_ERROR:
