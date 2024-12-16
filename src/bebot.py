@@ -1,7 +1,8 @@
 from pathlib import Path
 from discord import Color, Embed
-from discord.ext.commands import Bot, CommandError, Context
+from discord.ext.commands import Bot, CommandError, CommandNotFound, Context
 from src.exceptions import UserError
+from src.strings import exceptions as strings
 
 
 class Bebot(Bot):
@@ -21,10 +22,19 @@ class Bebot(Bot):
     async def on_command_error(self, ctx: Context, error: CommandError):
         error = getattr(error, "original", error)
 
-        if not isinstance(error, UserError):
-            raise error
+        message = strings.UNEXPECTED_ERROR
+
+        if isinstance(error, CommandNotFound):
+            message = strings.COMMAND_NOT_FOUND
+
+        if isinstance(error, UserError):
+            message = error.message
 
         embed = Embed(color=Color.red())
-        embed.add_field(name="Error", value=error.message)
+        embed.add_field(name="Error", value=message)
 
         await ctx.send(embed=embed, delete_after=5, ephemeral=True)
+
+        # Print the error if it's not a user error
+        if message == strings.UNEXPECTED_ERROR:
+            print(error)

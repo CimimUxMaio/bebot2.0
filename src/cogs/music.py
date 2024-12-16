@@ -74,7 +74,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="play",
         aliases=["p"],
-        description=commandstr.PLAY_DESC,
+        help=commandstr.PLAY_HELP,
     )
     @check_voice_requirements
     @with_status_message
@@ -105,7 +105,7 @@ class MusicCog(BaseCog, name="Music"):
 
             await ctx.reply(commandstr.PLAY_ADDED_TO_QUEUE.format(song.info.title))
 
-    @command(name="pause", description=commandstr.PAUSE_DESC)
+    @command(name="pause", help=commandstr.PAUSE_HELP)
     @check_voice_requirements
     @with_status_message
     async def pause(self, ctx: Context):
@@ -113,7 +113,7 @@ class MusicCog(BaseCog, name="Music"):
 
     @command(
         name="stop",
-        description=commandstr.STOP_DESC,
+        help=commandstr.STOP_HELP,
     )
     @check_voice_requirements
     @with_status_message
@@ -123,7 +123,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="skip",
         aliases=["next", "s"],
-        description=commandstr.SKIP_DESC,
+        help=commandstr.SKIP_HELP,
     )
     @check_voice_requirements
     @with_status_message
@@ -133,7 +133,7 @@ class MusicCog(BaseCog, name="Music"):
     @command(
         name="queue",
         aliases=["q"],
-        description=commandstr.QUEUE_DESC,
+        help=commandstr.QUEUE_HELP,
     )
     async def queue(self, ctx: Context):
         guild_id = cast(Guild, ctx.guild).id
