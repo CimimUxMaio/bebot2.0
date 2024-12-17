@@ -1,4 +1,4 @@
-PLAY_HELP = "Buscar cancion y agregarla a la cola de reproducción."
+PLAY_HELP = "Busca una canción y la agrega a la cola de reproducción."
 PLAY_SELECTION_TIMEOUT = "No seleccionó ninguna canción. Vuelva a intentarlo."
 PLAY_ADDED_TO_QUEUE = 'Se agregó "{%s}" a la cola.'
 
