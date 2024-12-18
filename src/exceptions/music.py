@@ -4,7 +4,7 @@ from src.exceptions.domainerror import UserError
 
 
 def SongNotFound(search: str) -> UserError:
-    return UserError(strings.SONG_NOT_FOUND % search)
+    return UserError(strings.SONG_NOT_FOUND.format(search))
 
 
 def UserNotConnectedToVoiceChannel() -> UserError:

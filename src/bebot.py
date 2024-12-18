@@ -37,4 +37,4 @@ class Bebot(Bot):
 
         # Print the error if it's not a user error
         if message == strings.UNEXPECTED_ERROR:
-            print(error)
+            raise error
