@@ -8,7 +8,7 @@ Duration = tuple[int, int, int]
 @dataclass
 class SongInfo:
     title: str
-    duration: Duration
+    duration: Duration | None
     author: str
     url: str
 

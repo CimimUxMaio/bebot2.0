@@ -29,9 +29,17 @@ def seconds_to_duration(seconds: int) -> Duration:
 
 
 def entry_to_song_info(entry: Entry) -> SongInfo:
+    dur_sec = entry.get(
+        "duration", None
+    )  # In some case, duration can be null if the video "is upcoming"
+
+    duration = None
+    if dur_sec is not None:
+        duration = seconds_to_duration(dur_sec)
+
     return SongInfo(
         title=entry["title"],
-        duration=seconds_to_duration(entry["duration"]),
+        duration=duration,
         url=entry["url"],
         author=entry["channel"],
     )
@@ -39,6 +47,7 @@ def entry_to_song_info(entry: Entry) -> SongInfo:
 
 def entry_to_song(entry: Entry) -> Song:
     info = entry_to_song_info(entry)
+
     return Song(
         info=info,
         audio=FFmpegPCMAudio(info.url, **FFMPEG_OPTIONS),
@@ -76,7 +85,8 @@ async def ytdl_search(
 
 async def ytdl_search_info(search: str, n: int = 5) -> list[SongInfo]:
     opts = {"extract_flat": True}
-    return await ytdl_search(f"ytsearch{n}:{search}", opts, entry_to_song_info)
+    infos = await ytdl_search(f"ytsearch{n}:{search}", opts, entry_to_song_info)
+    return [info for info in infos if info is not None]
 
 
 async def ytdl_get_song(search: str) -> Song:

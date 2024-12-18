@@ -185,9 +185,13 @@ class MusicCog(BaseCog, name="Music"):
 
         for i, info in enumerate(results):
             author = f"{commandstr.SONG_AUTHOR_LABEL} {info.author}"
-            duration = (
-                f"{commandstr.SONG_DURATION_LABEL} %02i:%02i:%02i" % info.duration
-            )
+
+            # Handle missing duration
+            duration_str = "?"
+            if info.duration is not None:
+                duration_str = "%02i:%02i:%02i" % info.duration
+
+            duration = f"{commandstr.SONG_DURATION_LABEL} {duration_str}"
 
             embed.add_field(
                 name=f"{NUMBER_EMOJIS[i]} {info.title}",
@@ -236,10 +240,16 @@ class MusicCog(BaseCog, name="Music"):
             embed.add_field(name="-", value=commandstr.STATUS_MESSAGE_EMPTY_QUEUE)
             return embed
 
-        duracion = "%02i:%02i:%02i" % song.info.duration
+        # Handle missing duration
+        duration_str = "?"
+        if song.info.duration is not None:
+            duration_str = "%02i:%02i:%02i" % song.info.duration
+
+        duration = f"{commandstr.SONG_DURATION_LABEL} {duration_str}"
+        author = f"{commandstr.SONG_AUTHOR_LABEL} {song.info.author}"
         embed.add_field(
             name=song.info.title,
-            value=f"{commandstr.SONG_DURATION_LABEL} {duracion} - {commandstr.SONG_AUTHOR_LABEL} {song.info.author}",
+            value=f"{duration} - {author}",
         )
         embed.set_thumbnail(url=song.thumbnail_url)
 
